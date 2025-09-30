@@ -17,7 +17,7 @@ def get_checkform_and_session(cookie_file="cookies.txt"):
         api_token: comme le port-salut
         user_id: idem
     """
-    
+
     s = requests.Session()
     cj = MozillaCookieJar(cookie_file)
     cj.load(ignore_discard=True, ignore_expires=True)
@@ -52,7 +52,30 @@ def get_checkform_and_session(cookie_file="cookies.txt"):
     # print(user_id)
     return s, checkform, user_id
 
-def get_album_tracks(session: requests.Session, api_token, album_id):
+def ajax_api_request(method: str, body: dict, session: requests.Session, api_token: str):
+    """_summary_
+
+    Args:
+        method (str): _description_
+        body (dict): _description_
+        session (requests.Session): _description_
+        api_token (str): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    API_URL = "https://www.deezer.com/ajax/gw-light.php"
+    payload = {
+        "api_version": "1.0",
+        "api_token": api_token,
+        "input": "3",
+        "method": method,
+    }
+    resp = session.post(API_URL, params=payload, json=body)
+    resp.raise_for_status()
+    return resp
+
+def get_album_tracks(session: requests.Session, api_token, album_id) -> pd.DataFrame:
     """Récuère les ids des tracks d'un album à partir de l'album_id de deezer
 
     Args:
@@ -79,11 +102,11 @@ def get_album_tracks(session: requests.Session, api_token, album_id):
     data = resp.json()
 
     tracks = data["results"].get("data", [])
-    # tracks_names = [t["SNG_TITLE"] for t in tracks]
-    tracks_ids = [t["SNG_ID"] for t in tracks]
     # print(tracks[0])
-
-    return pd.DataFrame(tracks_ids,columns=["Track_id"])
+    trackslist = pd.DataFrame({"Track_id": [t["SNG_ID"] for t in tracks ],
+                         "Artist_id": [int(t["ART_ID"]) for t in tracks]})
+    # print(trackslist.dtypes)
+    return trackslist
 
 def get_albums_by_artist(session: requests.Session, api_token, artist_id):
     """Récupère la liste des albums d'un artiste
@@ -116,6 +139,27 @@ def get_albums_by_artist(session: requests.Session, api_token, artist_id):
     albums_list = results['ALBUMS']['data']
     albums_ids = [a["ALB_ID"] for a in albums_list]
     return albums_ids
+
+def get_all_tracks_from_artists(session: requests.Session, api_token, art_id:int):
+    """_summary_
+
+    Args:
+        session (requests.Session): _description_
+        api_token (_type_): _description_
+        art_id (int): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    tracks_df = pd.DataFrame([])
+    album_ids = get_albums_by_artist(session, api_token, art_id)
+    for alb_id in album_ids:
+        album_tracks_df = get_album_tracks(session, api_token, alb_id)
+        tracks_df = pd.concat([tracks_df,album_tracks_df], ignore_index=True)
+    tracks_df.drop_duplicates(inplace=True)
+    print(tracks_df.dtypes)
+    print(tracks_df)
+    return tracks_df[tracks_df["Artist_id"] == art_id]
 
 def create_playlist(session: requests.Session, api_token, name, songs_ids, public):
     """Crée une playlist, à priori on devrait pouvoir mettre les tracks direct mais ça veut pas, il faut que je check le payload dans chrome il manque peut être des choses
@@ -210,33 +254,32 @@ def add_songs_to_playlist(session: requests.Session, api_token, playlist_id, son
     resp = session.post(API_URL, params=payload, json=body)
     resp.raise_for_status()
     print(resp.text)
+    return
 
-if __name__ == "__main__":
-    #Faut faire des fonctions avec ce qu'il y a dessous mais c'était pour tester
-    #Constantes pour tester
-    PLAYLIST_NAME = "testMulti2"
-    ALBUM_ID = 302127
-    ARTIST_IDS = [111636522,10192306,375308,817174,810503,137537962,1355757,167710,58801,1296451] #liste d'aritste avec des trucs pour faire plaisir à Nico parce qu'il m'a fait péter les couilles
-
+def main(name: str, artists: list):
     songs_to_add = pd.DataFrame([])
-
     #pour initialiser
     session, token, user_id =  get_checkform_and_session("cookies.txt")
 
     #Boucle sur ma liste d'artiste pour récupérer toutes les tracks de tous leurs albums et en prendre 3 random (pas sûr de la qualité du random) à chaque fois
-    for art_id in ARTIST_IDS:
-        tracks_df = pd.DataFrame([])
-        album_ids = get_albums_by_artist(session, token, art_id)
-        for alb_id in album_ids:
-            album_tracks_df = get_album_tracks(session, token, alb_id)
-            tracks_df = pd.concat([tracks_df,album_tracks_df], ignore_index=True)
-        tracks_df.drop_duplicates(inplace=True)
+    for art_id in artists:
+        tracks_df = get_all_tracks_from_artists(session, token, art_id)
         songs_to_add = pd.concat([songs_to_add,tracks_df.sample(n=3)], ignore_index=True)
 
     #Création de la playlist, récupération de l'id et ajout des tracks
-    create_playlist(session, token, PLAYLIST_NAME, [], False)
+    create_playlist(session, token, name, [], False)
     playlist_id = get_last_playlist_id(session, token, user_id)
     add_songs_to_playlist(session, token, playlist_id, songs_to_add["Track_id"])
+
+    return
+
+if __name__ == "__main__":
+    #Constantes pour tester
+    PLAYLIST_NAME = "testMulti3"
+    ALBUM_ID = 302127
+    ARTIST_IDS = [111636522,10192306,375308,817174,810503,137537962,1355757,167710,58801,1296451] #liste d'aritste avec des trucs pour faire plaisir à Nico parce qu'il m'a fait péter les couilles
+
+    main(PLAYLIST_NAME,ARTIST_IDS)
 
 
 
