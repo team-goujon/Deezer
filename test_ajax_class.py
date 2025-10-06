@@ -2,23 +2,81 @@ import requests
 from http.cookiejar import MozillaCookieJar
 import json
 import pandas as pd
+import numpy as np
 
 
 class playlist_creation():
 
-    def __init__(self, playlist_name, artists_list, cookie_file):
+    def __init__(self, playlist_name: str, max_selection: int, tracks_by_artist: int, include_relative: bool, cookie_file: str):
         self.playlist_name = playlist_name
         self.session = requests.Session()
         self.api_token = ""
-        self.artists_list = artists_list
+        self.max_selection = max_selection
+        self.include_relative = include_relative
+        # self.artists_list = artists_list
         self.set_session_params(cookie_file)
         self.get_apitoken_and_userid()
-        self.set_song_list_to_add()
-        # print(self.songs_to_add)
+        # self.test(self.artists_list[8])
+        self.artists_list = self.create_artist_list()
+        self.set_song_list_to_add(tracks_by_artist)
+        # # print(self.songs_to_add)
         self.create_playlist(False)
         self.get_last_playlist_id()
         self.add_songs_to_playlist()
         pass
+
+    def test(self,artist_id):
+        body = {
+            "art_id": artist_id,
+            "lang": "fr",
+            "nb": 50,
+            "tab": 1
+        }
+        # resp = self.ajax_api_request("artist.getSelectedAndRelatedArtist", body)
+        resp = self.ajax_api_request("deezer.pageArtist", body)
+        data = resp.json()
+        print(data.keys())
+        # data = data["error"]
+        # print(data)
+        data = data["results"]
+        print(data.keys())
+        data = data["RELATED_ARTISTS"]
+        print(data['count'])
+        print(data['total'])
+        names =[d['ART_NAME'] for d in data['data']]
+        print(names)
+        # print(data)
+        # print(data.keys())
+        pass
+
+    def create_artist_list(self) -> list:
+        selected_favorites = self.base_artists_selection()
+        artists_list = selected_favorites
+        if self.include_relative:
+            artists_list += self.get_related_artists_list(selected_favorites)
+        print(f"{self.max_selection} artistes choisis, et {len(artists_list)} au total")
+        return artists_list
+
+    def base_artists_selection(self) -> list:
+        question = "Choisissez des artistes parmis vos favoris."
+        print(question)
+        favoris = self.get_favorite_artists()
+        with pd.option_context('display.max_rows', None):
+            print(favoris["Artist_name"])
+        selected_artists = []
+        for n in range(1,self.max_selection+1):
+            i = int(input(f"Entrez l'indice de l'artiste {n}: "))
+            selected_artists.append(int(favoris.iloc[i,1]))
+        return selected_artists
+
+    def get_related_artists_list(self, base_list: list) -> list:
+        related_list = []
+        for art_id in base_list:
+            tmp = self.get_related_artists(art_id)
+            related_list += tmp
+        full_df = pd.DataFrame({"related_artist": related_list})
+        sorted_df = full_df.groupby(["related_artist"],as_index=False).value_counts().sort_values(by="count", ascending=False)
+        return sorted_df[sorted_df["count"]>1]["related_artist"].to_list()
 
     def set_session_params(self, cookie_file: str):
         cj = MozillaCookieJar(cookie_file)
@@ -32,7 +90,7 @@ class playlist_creation():
         })
         pass
 
-    def ajax_api_request(self, method: str, body: dict)->requests.Response:
+    def ajax_api_request(self, method: str, body: dict) -> requests.Response:
         API_URL = "https://www.deezer.com/ajax/gw-light.php"
         payload = {
             "api_version": "1.0",
@@ -56,6 +114,34 @@ class playlist_creation():
         if not self.api_token:
             raise RuntimeError("Impossible de récupérer checkForm (vérifie le cookie 'arl' et la session).")
         pass
+
+    def get_favorite_artists(self) -> pd.DataFrame:
+        body = {
+            'user_id': self.user_id,
+            'tab': 'artists',
+            'nb': 10000
+        }
+        resp = self.ajax_api_request("deezer.pageProfile", body)
+        data = resp.json()
+        data = data["results"]['TAB']['artists']['data']
+        favorite_artists = pd.DataFrame({"Artist_id": [int(a["ART_ID"]) for a in data],
+                                         "Artist_name": [a["ART_NAME"] for a in data]})
+        favorite_artists.sort_values(by="Artist_name",inplace=True)
+        favorite_artists.reset_index(inplace=True)
+        return favorite_artists
+
+    def get_related_artists(self, artist_id: int) -> list:
+        body = {
+            "art_id": artist_id,
+            "lang": "fr",
+            "tab": 1,
+            "nb": 100
+        }
+        resp = self.ajax_api_request("deezer.pageArtist", body)
+        data = resp.json()
+        data = data["results"]['RELATED_ARTISTS']['data']
+        related_artists = [int(a['ART_ID']) for a in data]
+        return related_artists
 
     def get_album_tracks(self, album_id: int) -> pd.DataFrame:
         body = {
@@ -95,11 +181,11 @@ class playlist_creation():
         # print(tracks_df)
         return tracks_df[tracks_df["Artist_id"] == art_id]
 
-    def set_song_list_to_add(self):
+    def set_song_list_to_add(self, tracks_number: int):
         self.songs_to_add = pd.DataFrame([])
         for art_id in self.artists_list:
             tracks_df = self.get_all_tracks_from_artist(art_id)
-            self.songs_to_add = pd.concat([self.songs_to_add,tracks_df.sample(n=3)], ignore_index=True)
+            self.songs_to_add = pd.concat([self.songs_to_add,tracks_df.sample(n=tracks_number)], ignore_index=True)
         pass
 
     def create_playlist(self, public):
@@ -145,8 +231,8 @@ if __name__ == "__main__":
     #Constantes pour tester
     # PLAYLIST_NAME = "testMulti3"
     # ALBUM_ID = 302127
-    ARTIST_IDS = [111636522,10192306,375308,817174,810503,137537962,1355757,167710,58801,1296451] #liste d'aritste avec des trucs pour faire plaisir à Nico parce qu'il m'a fait péter les couilles
-    test = playlist_creation("testMulti4", ARTIST_IDS, "cookies.txt")
+    # ARTIST_IDS = [111636522,10192306,375308,817174,810503,137537962,1355757,167710,58801,1296451] #liste d'aritste avec des trucs pour faire plaisir à Nico parce qu'il m'a fait péter les couilles
+    test = playlist_creation("TestWithFav", 4, 2, True, "cookies.txt")
 
 
 
