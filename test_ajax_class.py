@@ -85,6 +85,7 @@ class playlist_creation():
         }
         resp = self.ajax_api_request("deezer.pageProfile", body)
         data = resp.json()
+        #Secondaire à partir de là
         data = data["results"]['TAB']['artists']['data']
         favorite_artists = pd.DataFrame({"Artist_id": [int(a["ART_ID"]) for a in data],
                                          "Artist_name": [a["ART_NAME"] for a in data]})
@@ -100,6 +101,7 @@ class playlist_creation():
         }
         resp = self.ajax_api_request("deezer.pageArtist", body)
         data = resp.json()
+        #Secondaire à partir de là
         results = data["results"]
         albums_list = results['ALBUMS']['data']
         albums_ids = [a["ALB_ID"] for a in albums_list]
@@ -113,6 +115,7 @@ class playlist_creation():
         }
         resp = self.ajax_api_request("song.getListByAlbum", body)
         data = resp.json()
+        #Secondaire à partir de là
         tracks = data["results"].get("data", [])
         tracks_list = pd.DataFrame({"Track_id": [t["SNG_ID"] for t in tracks ],
                             "Artist_id": [int(t["ART_ID"]) for t in tracks]})
@@ -137,13 +140,16 @@ class playlist_creation():
         }
         resp = self.ajax_api_request("deezer.pageProfile", body)
         js = json.loads(resp.text)
+        #Secondaire à partir de là
         playlists_data = js.get("results").get("TAB").get("home").get("playlists")
         last_playlist = playlists_data["data"][0]
         self.playlist_id = last_playlist['PLAYLIST_ID']
         pass
 
     def add_songs_to_playlist(self):
+        #Secondaire à partir de là
         songs_list_formated = [[s,0] for s in self.songs_to_add['Track_id']]
+        #Primaire
         body = {
             "playlist_id": str(self.playlist_id),
             "songs": songs_list_formated,
@@ -164,6 +170,7 @@ class playlist_creation():
         }
         resp = self.ajax_api_request("deezer.pageArtist", body)
         data = resp.json()
+        #Secondaire à partir de là
         data = data["results"]['RELATED_ARTISTS']['data']
         related_artists = [int(a['ART_ID']) for a in data]
         return related_artists
