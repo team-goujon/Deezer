@@ -38,6 +38,8 @@ class playlist_creation():
         # print(data.keys())
         pass
 
+# Auth class
+
     def set_session_params(self, cookie_file: str):
         cj = MozillaCookieJar(cookie_file)
         cj.load(ignore_discard=True, ignore_expires=True)
@@ -68,33 +70,12 @@ class playlist_creation():
         js = resp.json()
         if isinstance(js, dict):
             results = js.get('results') or {}
-            self.api_token = results.get('checkForm') or results.get('CHECKFORM') or results.get('check_form') #à voir si il y a vraiment besoin de toutes les formes mais au début ça marchait pas 
+            self.api_token = results.get('checkForm') or results.get('CHECKFORM') or results.get('check_form') #à voir si il y a vraiment besoin de toutes les formes mais au début ça marchait pas
             user_info = results.get("USER")
             self.user_id = user_info.get("USER_ID")
         if not self.api_token:
             raise RuntimeError("Impossible de récupérer checkForm (vérifie le cookie 'arl' et la session).")
         pass
-
-    def create_artist_list(self, max_selection: int, include_relative: bool) -> list:
-        self.max_selection = max_selection
-        selected_favorites = self.base_artists_selection()
-        self.artists_list = selected_favorites
-        if include_relative:
-            self.artists_list += self.get_related_artists_list(selected_favorites)
-        print(f"{self.max_selection} artistes choisis, et {len(self.artists_list)} au total")
-        pass
-
-    def base_artists_selection(self) -> list:
-        question = "Choisissez des artistes parmis vos favoris."
-        print(question)
-        favoris = self.get_favorite_artists()
-        with pd.option_context('display.max_rows', None):
-            print(favoris["Artist_name"])
-        selected_artists = []
-        for n in range(1,self.max_selection+1):
-            i = int(input(f"Entrez l'indice de l'artiste {n}: "))
-            selected_artists.append(int(favoris.iloc[i,1]))
-        return selected_artists
 
     def get_favorite_artists(self) -> pd.DataFrame:
         body = {
@@ -110,46 +91,6 @@ class playlist_creation():
         favorite_artists.sort_values(by="Artist_name",inplace=True)
         favorite_artists.reset_index(inplace=True)
         return favorite_artists
-
-    def get_related_artists_list(self, base_list: list) -> list:
-        related_list = []
-        for art_id in base_list:
-            tmp = self.get_related_artists(art_id)
-            related_list += tmp
-        full_df = pd.DataFrame({"related_artist": related_list})
-        sorted_df = full_df.groupby(["related_artist"],as_index=False).value_counts().sort_values(by="count", ascending=False)
-        return sorted_df[sorted_df["count"]>1]["related_artist"].to_list()
-
-    def get_related_artists(self, artist_id: int) -> list:
-        body = {
-            "art_id": artist_id,
-            "lang": "fr",
-            "tab": 1,
-            "nb": 100
-        }
-        resp = self.ajax_api_request("deezer.pageArtist", body)
-        data = resp.json()
-        data = data["results"]['RELATED_ARTISTS']['data']
-        related_artists = [int(a['ART_ID']) for a in data]
-        return related_artists
-
-    def set_song_list_to_add(self, tracks_by_artist: int):
-        self.songs_to_add = pd.DataFrame([])
-        for art_id in self.artists_list:
-            tracks_df = self.get_all_tracks_from_artist(art_id)
-            self.songs_to_add = pd.concat([self.songs_to_add,tracks_df.sample(n=tracks_by_artist)], ignore_index=True)
-        pass
-
-    def get_all_tracks_from_artist(self, art_id: int) -> pd.DataFrame:
-        tracks_df = pd.DataFrame([])
-        album_ids = self.get_albums_by_artist(art_id)
-        for alb_id in album_ids:
-            album_tracks_df = self.get_album_tracks(alb_id)
-            tracks_df = pd.concat([tracks_df,album_tracks_df], ignore_index=True)
-        tracks_df.drop_duplicates(inplace=True)
-        # print(tracks_df.dtypes)
-        # print(tracks_df)
-        return tracks_df[tracks_df["Artist_id"] == art_id]
 
     def get_albums_by_artist(self, artist_id: int) -> list:
         body = {
@@ -173,16 +114,9 @@ class playlist_creation():
         resp = self.ajax_api_request("song.getListByAlbum", body)
         data = resp.json()
         tracks = data["results"].get("data", [])
-        # print(tracks[0])
         tracks_list = pd.DataFrame({"Track_id": [t["SNG_ID"] for t in tracks ],
                             "Artist_id": [int(t["ART_ID"]) for t in tracks]})
         return tracks_list
-
-    def create_playlist_with_songs(self, name: str, public: bool):
-        self.create_playlist(name, public)
-        self.get_last_playlist_id()
-        self.add_songs_to_playlist()
-        pass
 
     def create_playlist(self, name: str, public: bool):
         body = {
@@ -220,6 +154,81 @@ class playlist_creation():
         resp = self.ajax_api_request("playlist.addSongs", body)
         print(resp.text)
         return
+
+    def get_related_artists(self, artist_id: int) -> list:
+        body = {
+            "art_id": artist_id,
+            "lang": "fr",
+            "tab": 1,
+            "nb": 100
+        }
+        resp = self.ajax_api_request("deezer.pageArtist", body)
+        data = resp.json()
+        data = data["results"]['RELATED_ARTISTS']['data']
+        related_artists = [int(a['ART_ID']) for a in data]
+        return related_artists
+
+
+#Secondary class
+
+    def get_related_artists_list(self, base_list: list) -> list:
+        related_list = []
+        for art_id in base_list:
+            tmp = self.get_related_artists(art_id)
+            related_list += tmp
+        full_df = pd.DataFrame({"related_artist": related_list})
+        sorted_df = full_df.groupby(["related_artist"],as_index=False).value_counts().sort_values(by="count", ascending=False)
+        return sorted_df[sorted_df["count"]>1]["related_artist"].to_list()
+
+
+
+    def set_song_list_to_add(self, tracks_by_artist: int):
+        self.songs_to_add = pd.DataFrame([])
+        for art_id in self.artists_list:
+            tracks_df = self.get_all_tracks_from_artist(art_id)
+            self.songs_to_add = pd.concat([self.songs_to_add,tracks_df.sample(n=tracks_by_artist)], ignore_index=True)
+        pass
+
+    def get_all_tracks_from_artist(self, art_id: int) -> pd.DataFrame:
+        tracks_df = pd.DataFrame([])
+        album_ids = self.get_albums_by_artist(art_id)
+        for alb_id in album_ids:
+            album_tracks_df = self.get_album_tracks(alb_id)
+            tracks_df = pd.concat([tracks_df,album_tracks_df], ignore_index=True)
+        tracks_df.drop_duplicates(inplace=True)
+        return tracks_df[tracks_df["Artist_id"] == art_id]
+
+
+
+
+    def create_artist_list(self, max_selection: int, include_relative: bool) -> list:
+        self.max_selection = max_selection
+        selected_favorites = self.base_artists_selection()
+        self.artists_list = selected_favorites
+        if include_relative:
+            self.artists_list += self.get_related_artists_list(selected_favorites)
+        print(f"{self.max_selection} artistes choisis, et {len(self.artists_list)} au total")
+        pass
+
+    def base_artists_selection(self) -> list:
+        question = "Choisissez des artistes parmis vos favoris."
+        print(question)
+        favoris = self.get_favorite_artists()
+        with pd.option_context('display.max_rows', None):
+            print(favoris["Artist_name"])
+        selected_artists = []
+        for n in range(1,self.max_selection+1):
+            i = int(input(f"Entrez l'indice de l'artiste {n}: "))
+            selected_artists.append(int(favoris.iloc[i,1]))
+        return selected_artists
+
+    def create_playlist_with_songs(self, name: str, public: bool):
+        self.create_playlist(name, public)
+        self.get_last_playlist_id()
+        self.add_songs_to_playlist()
+        pass
+
+
 
 
 
