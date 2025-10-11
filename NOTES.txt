@@ -1,0 +1,31 @@
+#generate_playlist.py
+from service import DeezerService
+
+client = new DeezerService()
+client.generate_playlist(name: "My New Playlist", public: true, auto: true)
+
+#service/__init__.py
+from service.api import DeezerAPI
+
+#service/api.py
+import requests
+
+# class DeezerService()
+init:
+    myApi = new DeezerAPI()
+
+generate_playlist:
+    if auto:
+        create_playlist("My New Playlist")
+    else:
+        create_playlist("My New Playlist", interactive)
+
+create_playlist(name, interactive):
+    if interactive:
+        new_playlist_interactive(name)
+    else:
+        new_playlist(name)
+
+service:
+    __init__.py
+    api.py
