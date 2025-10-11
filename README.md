@@ -2,7 +2,8 @@
 
 ## Usage
 ```
-python generate_playlist.py
+pip install -r requirements.txt
+python test_ajax_clas.py
 ```
 
 ## Plan
