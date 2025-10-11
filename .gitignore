@@ -1,8 +1,6 @@
 #Cookies deezer
 cookies.txt
-#Tests_Sam
-test_requete.py
-test_requete2.py
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
