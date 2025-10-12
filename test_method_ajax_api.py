@@ -1,0 +1,106 @@
+import requests
+from http.cookiejar import MozillaCookieJar
+import json
+import pandas as pd
+import numpy as np
+
+
+class test_method_ajax_api():
+
+    def __init__(self, cookie_file: str, method: str, body: json):
+        self.session = requests.Session()
+        self.api_token = ""
+        self.set_session_params(cookie_file)
+        self.get_apitoken_and_userid()
+        self.test(method,body)
+        pass
+
+    def set_session_params(self, cookie_file: str):
+        cj = MozillaCookieJar(cookie_file)
+        cj.load(ignore_discard=True, ignore_expires=True)
+        self.session.cookies.update({c.name: c.value for c in cj if c.name == "arl" or c.name == "sid"})
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (compatible)',
+            'Referer': 'https://www.deezer.com/',
+            'Origin': 'https://www.deezer.com',
+            'Content-Type': 'application/json'
+        })
+        pass
+
+    def ajax_api_request(self, method: str, body: dict) -> requests.Response:
+        API_URL = "https://www.deezer.com/ajax/gw-light.php"
+        payload = {
+            "api_version": "1.0",
+            "api_token": self.api_token,
+            "input": "3",
+            "method": method,
+        }
+        resp = self.session.post(API_URL, params=payload, json=body)
+        resp.raise_for_status()
+        return resp
+
+    def get_apitoken_and_userid(self):
+        resp = self.ajax_api_request("deezer.getUserData",{})
+        print(resp)
+        js = resp.json()
+        if isinstance(js, dict):
+            results = js.get('results') or {}
+            self.api_token = results.get('checkForm') or results.get('CHECKFORM') or results.get('check_form') #à voir si il y a vraiment besoin de toutes les formes mais au début ça marchait pas
+            user_info = results.get("USER")
+            self.user_id = user_info.get("USER_ID")
+        if not self.api_token:
+            raise RuntimeError("Impossible de récupérer checkForm (vérifie le cookie 'arl' et la session).")
+        pass
+
+    def test(self, method: str, body: json):
+        resp = self.ajax_api_request(method, body)
+        data = resp.json()
+        print(data.keys())
+        data = data["results"]
+        print(data.keys())
+        temp_data = data
+        flag = True
+        path = []
+        while flag:
+            chosen_key = input("Choose json keys to go deeper, 1 to go one level up, 0 to go back to 'results', leave empty to quit: ")
+            match chosen_key:
+                case '':
+                    flag = False
+                case '0':
+                    path = []
+                    temp_data = data
+                    print(temp_data.keys())
+                case '1':
+                    path.pop()
+                    temp_data = data
+                    for k in path:
+                        temp_data = temp_data[k]
+                    print(temp_data.keys())
+                case _:
+                    if chosen_key in temp_data:
+                        path.append(chosen_key)
+                        temp_data = temp_data[chosen_key]
+                        if type(temp_data) == dict:
+                            print(temp_data.keys())
+                        else:
+                            print(type(temp_data))
+                            if input("print data y/n ? ") == "y":
+                                print(temp_data)
+                    else:
+                        print("Wrong key")
+                        print(temp_data.keys())
+        pass
+
+
+if __name__ == "__main__":
+    #Constantes pour tester
+    # PLAYLIST_NAME = "testMulti3"
+    # ALBUM_ID = 302127
+    # ARTIST_IDS = [111636522,10192306,375308,817174,810503,137537962,1355757,167710,58801,1296451] #liste d'aritste avec des trucs pour faire plaisir à Nico parce qu'il m'a fait péter les couilles
+    body = {
+            "art_id": 810503,
+            "lang": "fr",
+            "nb": 50,
+            "tab": 1
+        }
+    test = test_method_ajax_api("cookies.txt", "deezer.pageArtist", body)
