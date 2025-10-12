@@ -7,12 +7,12 @@ import numpy as np
 
 class test_method_ajax_api():
 
-    def __init__(self, cookie_file: str, method: str, body: json):
+    def __init__(self, cookie_file: str, method: str, body: json, see_keys: bool):
         self.session = requests.Session()
         self.api_token = ""
         self.set_session_params(cookie_file)
         self.get_apitoken_and_userid()
-        self.test(method,body)
+        self.test(method,body,see_keys)
         pass
 
     def set_session_params(self, cookie_file: str):
@@ -52,9 +52,14 @@ class test_method_ajax_api():
             raise RuntimeError("Impossible de récupérer checkForm (vérifie le cookie 'arl' et la session).")
         pass
 
-    def test(self, method: str, body: json):
+    def test(self, method: str, body: json, see_keys: bool):
         resp = self.ajax_api_request(method, body)
         data = resp.json()
+        if see_keys:
+            self.go_through_keys(data)
+        pass
+
+    def go_through_keys(self, data: json):
         print(data.keys())
         data = data["results"]
         print(data.keys())
@@ -71,11 +76,7 @@ class test_method_ajax_api():
                     temp_data = data
                     print(temp_data.keys())
                 case '1':
-                    path.pop()
-                    temp_data = data
-                    for k in path:
-                        temp_data = temp_data[k]
-                    print(temp_data.keys())
+                    self.go_up(data, temp_data, path)
                 case _:
                     if chosen_key in temp_data:
                         path.append(chosen_key)
@@ -85,10 +86,22 @@ class test_method_ajax_api():
                         else:
                             print(type(temp_data))
                             if input("print data y/n ? ") == "y":
-                                print(temp_data)
+                                if type(temp_data) == list and temp_data != []:
+                                    print(temp_data[0])
+                                else:
+                                    print(temp_data)
+                            self.go_up(data, temp_data, path)
                     else:
                         print("Wrong key")
                         print(temp_data.keys())
+        pass
+
+    def go_up(self, data, temp_data, path):
+        path.pop()
+        temp_data = data
+        for k in path:
+            temp_data = temp_data[k]
+        print(temp_data.keys())
         pass
 
 
@@ -103,4 +116,4 @@ if __name__ == "__main__":
             "nb": 50,
             "tab": 1
         }
-    test = test_method_ajax_api("cookies.txt", "deezer.pageArtist", body)
+    test = test_method_ajax_api("cookies.txt", "deezer.pageArtist", body, True)
