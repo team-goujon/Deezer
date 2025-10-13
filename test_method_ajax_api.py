@@ -120,8 +120,8 @@ if __name__ == "__main__":
     body = {
             "art_id": 810503,
             "lang": "fr",
-            "count": 50,
-            "tab": 0 #0 pour les albums, 1 pour tous les artistes semblables
+            "count": 50, #Pas sûr que ce soit utile, avant j'avais mis "nb", et ça change rien
+            "tab": 0 #0 pour les albums, 1 pour 20 artistes semblables
         }
 
     #body pageProfile
