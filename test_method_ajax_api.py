@@ -7,12 +7,12 @@ import numpy as np
 
 class test_method_ajax_api():
 
-    def __init__(self, cookie_file: str, method: str, body: json, see_keys: bool):
+    def __init__(self, cookie_file: str, method: str, body: json, recover_user_id: bool, see_keys: bool):
         self.session = requests.Session()
         self.api_token = ""
         self.set_session_params(cookie_file)
         self.get_apitoken_and_userid()
-        self.test(method,body,see_keys)
+        self.test(method,body,recover_user_id,see_keys)
         pass
 
     def set_session_params(self, cookie_file: str):
@@ -52,15 +52,21 @@ class test_method_ajax_api():
             raise RuntimeError("Impossible de récupérer checkForm (vérifie le cookie 'arl' et la session).")
         pass
 
-    def test(self, method: str, body: json, see_keys: bool):
+    def test(self, method: str, body: json, recover_user_id: bool, see_keys: bool):
+        if recover_user_id:
+            body["user_id"] = self.user_id
+            print(body)
         resp = self.ajax_api_request(method, body)
         data = resp.json()
+        print(data.keys())
+        if data['error'] != []:
+            print("Erreur dans la requête")
+            print(data["error"])
         if see_keys:
             self.go_through_keys(data)
         pass
 
     def go_through_keys(self, data: json):
-        print(data.keys())
         data = data["results"]
         print(data.keys())
         temp_data = data
@@ -74,26 +80,24 @@ class test_method_ajax_api():
                 case '0':
                     path = []
                     temp_data = data
-                    print(temp_data.keys())
                 case '1':
-                    self.go_up(data, temp_data, path)
+                    temp_data = self.go_up(data, temp_data, path)
                 case _:
                     if chosen_key in temp_data:
                         path.append(chosen_key)
                         temp_data = temp_data[chosen_key]
-                        if type(temp_data) == dict:
-                            print(temp_data.keys())
-                        else:
+                        if type(temp_data) != dict:
                             print(type(temp_data))
                             if input("print data y/n ? ") == "y":
                                 if type(temp_data) == list and temp_data != []:
                                     print(temp_data[0])
                                 else:
                                     print(temp_data)
-                            self.go_up(data, temp_data, path)
+                            temp_data = self.go_up(data, temp_data, path)
                     else:
                         print("Wrong key")
-                        print(temp_data.keys())
+            if flag:
+                print(temp_data.keys())
         pass
 
     def go_up(self, data, temp_data, path):
@@ -101,8 +105,7 @@ class test_method_ajax_api():
         temp_data = data
         for k in path:
             temp_data = temp_data[k]
-        print(temp_data.keys())
-        pass
+        return temp_data
 
 
 if __name__ == "__main__":
@@ -110,10 +113,24 @@ if __name__ == "__main__":
     # PLAYLIST_NAME = "testMulti3"
     # ALBUM_ID = 302127
     # ARTIST_IDS = [111636522,10192306,375308,817174,810503,137537962,1355757,167710,58801,1296451] #liste d'aritste avec des trucs pour faire plaisir à Nico parce qu'il m'a fait péter les couilles
+
+    #body pageArtist
+    method = "deezer.pageArtist"
+    recover_user_id = False
     body = {
             "art_id": 810503,
             "lang": "fr",
-            "nb": 50,
-            "tab": 1
+            "count": 50,
+            "tab": 0 #0 pour les albums, 1 pour tous les artistes semblables
         }
-    test = test_method_ajax_api("cookies.txt", "deezer.pageArtist", body, True)
+
+    #body pageProfile
+    # method = "deezer.pageProfile"
+    # recover_user_id = True
+    # body = {
+    #         # 'user_id': user_id,
+    #         'tab': 'artists',
+    #         'nb': 10000
+    #     }
+
+    test = test_method_ajax_api("cookies.txt", method, body, recover_user_id, True)

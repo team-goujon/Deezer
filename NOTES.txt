@@ -29,3 +29,15 @@ create_playlist(name, interactive):
 service:
     __init__.py
     api.py
+
+
+Notes pour Tomtom:
+    - Pour ma méthode "deezer.pageProfile" :
+        On peut utiliser le même body pour les 2 méthode que j'avais faites, j'ai toutes les infos dont j'ai besoin dedans:
+        body = {
+                # 'user_id': user_id,
+                'tab': 'artists',
+                'nb': 10000
+            }
+    - Pour la méthode "deezer.pageArtist":
+        là j'arrive pas à avoir tout ce que je veux sans changer le "tab", mais en fait je suis même pas sûr de bien prendre tous les albums. Il faudra peut être faire plusieurs requête pour tout avoir
