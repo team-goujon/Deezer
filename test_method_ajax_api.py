@@ -120,16 +120,16 @@ if __name__ == "__main__":
     body = {
             "art_id": 810503,
             "lang": "fr",
-            "count": 50,
-            "tab": 0 #0 pour les albums, 1 pour tous les artistes semblables
+            "count": 20,
+            "tab": 1 #0 pour les albums, 1 pour tous les artistes semblables
         }
 
-    #body pageProfile
+    # #body pageProfile
     # method = "deezer.pageProfile"
     # recover_user_id = True
     # body = {
     #         # 'user_id': user_id,
-    #         'tab': 'artists',
+    #         'tab': 'home',
     #         'nb': 10000
     #     }
 
