@@ -10,15 +10,24 @@ class DeezerService():
         pass
 
     def set_number_random_artists(self, n: int):
-        self.number_random_artists = n
+        if type(n) != int:
+            raise TypeError("Attribute should be int")
+        else:
+            self.number_random_artists = n
         pass
 
     def set_number_selected_artists(self, n: int):
-        self.number_selected_artists = n
+        if type(n) != int:
+            raise TypeError("Attribute should be int")
+        else:
+            self.number_selected_artists = n
         pass
 
     def set_number_tracks_by_artist(self, n: int):
-        self.number_tracks_by_artist = n
+        if type(n) != int:
+            raise TypeError("Attribute should be int")
+        else:
+            self.number_tracks_by_artist = n
         pass
 
     def create_playlist(self, name: str, auto: bool, public: bool, include_relative: bool = False):
@@ -34,12 +43,17 @@ class DeezerService():
         pass
 
     def get_user_favorites_artists(self) -> pd.DataFrame:
-        data = self.session.get_pageprofile('artists')
-        data = data['results']['TAB']['artists']['data']
-        favorite_artists = pd.DataFrame(data)
-        favorite_artists.sort_values(by='ART_NAME',inplace=True)
-        favorite_artists.reset_index(drop=True,inplace=True)
-        return favorite_artists[['ART_ID', 'ART_NAME', 'ART_PICTURE']]
+        try:
+            data = self.session.get_pageprofile('artists')
+            data = data['results']['TAB']['artists']['data']
+            favorite_artists = pd.DataFrame(data)
+            favorite_artists.sort_values(by='ART_NAME',inplace=True)
+            favorite_artists.reset_index(drop=True,inplace=True)
+            return favorite_artists[['ART_ID', 'ART_NAME', 'ART_PICTURE']]
+        except KeyError:
+            print("La réponse de la requête n'est pas conforme")
+            print(data['error'])
+
 
     def get_user_selection(self, user_favorites: pd.DataFrame):
         question = "Choisissez des artistes parmis vos favoris."
@@ -103,6 +117,9 @@ class DeezerService():
 
 if __name__ == '__main__':
     newServ = DeezerService()
-    test = newServ.create_playlist('TestFav3', auto=False, public=False, include_relative=True)
+    test = newServ.get_user_favorites_artists()
+    # newServ.set_number_random_artists("tut")
+    # print(newServ.number_random_artists)
+    # test = newServ.create_playlist('TestFav3', auto=False, public=False, include_relative=True)
 
 

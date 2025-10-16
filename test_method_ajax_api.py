@@ -115,22 +115,22 @@ if __name__ == "__main__":
     # ARTIST_IDS = [111636522,10192306,375308,817174,810503,137537962,1355757,167710,58801,1296451] #liste d'aritste avec des trucs pour faire plaisir à Nico parce qu'il m'a fait péter les couilles
 
     #body pageArtist
-    method = "deezer.pageArtist"
-    recover_user_id = False
-    body = {
-            "art_id": 810503,
-            "lang": "fr",
-            "count": 20,
-            "tab": 1 #0 pour les albums, 1 pour tous les artistes semblables
-        }
-
-    # #body pageProfile
-    # method = "deezer.pageProfile"
-    # recover_user_id = True
+    # method = "deezer.pageArtist"
+    # recover_user_id = False
     # body = {
-    #         # 'user_id': user_id,
-    #         'tab': 'home',
-    #         'nb': 10000
+    #         "art_id": 810503,
+    #         "lang": "fr",
+    #         "count": 20,
+    #         "tab": 1 #0 pour les albums, 1 pour tous les artistes semblables
     #     }
 
-    test = test_method_ajax_api("cookies.txt", method, body, recover_user_id, True)
+    #body pageProfile
+    method = "deezer.pageProfile"
+    recover_user_id = False
+    body = {
+            # 'user_id': user_id,
+            'tab': 'home',
+            'nb': 10000
+        }
+
+    test = test_method_ajax_api("cookies.txt", method, body, recover_user_id, False)
