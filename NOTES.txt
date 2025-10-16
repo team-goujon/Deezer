@@ -32,12 +32,20 @@ service:
 
 
 Notes pour Tomtom:
-    - Pour ma méthode "deezer.pageProfile" :
-        On peut utiliser le même body pour les 2 méthode que j'avais faites, j'ai toutes les infos dont j'ai besoin dedans:
+    - Pour la méthode "deezer.pageProfile" :
+        J'ai besoin de l'utiliser 2 fois en changeant le champs tab ("artists" pour récupérer les favoris, et "home" pour les playlists (en considérant qu'on trouve pas le problème de la réponse vide)):
         body = {
                 # 'user_id': user_id,
                 'tab': 'artists',
                 'nb': 10000
             }
     - Pour la méthode "deezer.pageArtist":
-        là j'arrive pas à avoir tout ce que je veux sans changer le "tab", mais en fait je suis même pas sûr de bien prendre tous les albums. Il faudra peut être faire plusieurs requête pour tout avoir
+        Là aussi je dois changer le "tab", mais comme le compteur est bloqué à 20 (et en vrai ça doit être pareil pour les artists, j'ai surement pas fait de tests avec des artistes ayant + de 20 albums)
+        je pense qu'il faut faire plusieurs requête, dans les réponses aux requêtes, il y a le nombre d'éléments et le total, donc je peux facilement savoir si il m'en manque. 
+        Et si je dis pas de conneries c'est dans la classe DeezerService qu'il faut gérer ça.
+        body = {
+            "art_id": 810503,
+            "lang": "fr",
+            "count": 50, #Pas sûr que ce soit utile, avant j'avais mis "nb", et ça change rien
+            "tab": 0 #0 pour les albums, 1 pour 20 artistes semblables
+        }
