@@ -41,7 +41,7 @@ class test_method_ajax_api():
 
     def get_apitoken_and_userid(self):
         resp = self.ajax_api_request("deezer.getUserData",{})
-        print(resp)
+        # print(resp)
         js = resp.json()
         if isinstance(js, dict):
             results = js.get('results') or {}
@@ -57,13 +57,14 @@ class test_method_ajax_api():
             body["user_id"] = self.user_id
             print(body)
         resp = self.ajax_api_request(method, body)
-        data = resp.json()
-        print(data.keys())
-        if data['error'] != []:
-            print("Erreur dans la requête")
-            print(data["error"])
-        if see_keys:
-            self.go_through_keys(data)
+        if resp.text != '':
+            data = resp.json()
+            print(data.keys())
+            if data['error'] != []:
+                print("Erreur dans la requête")
+                print(data["error"])
+            if see_keys:
+                self.go_through_keys(data)
         pass
 
     def go_through_keys(self, data: json):
@@ -125,12 +126,24 @@ if __name__ == "__main__":
     #     }
 
     #body pageProfile
-    method = "deezer.pageProfile"
+    # method = "deezer.pageProfile"
+    # recover_user_id = True
+    # body = {
+    #         # 'user_id': user_id,
+    #         'tab': 'home',
+    #         'nb': 10000
+    #     }
+
+    # body create playlist
+    method = "playlist.create"
     recover_user_id = False
     body = {
-            # 'user_id': user_id,
-            'tab': 'home',
-            'nb': 10000
+            "title": "test",
+            "description": "description",
+            "status": 1,
+            "tags": "",
+            "songs": [],
+            "collaborative": False
         }
 
     test = test_method_ajax_api("cookies.txt", method, body, recover_user_id, False)

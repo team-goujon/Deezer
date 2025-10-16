@@ -4,11 +4,11 @@ from http.cookiejar import MozillaCookieJar
 class DeezerAPI:
     API_URL = "https://www.deezer.com/ajax/gw-light.php"
 
-    @classmethod
+    # @classmethod -> de ce que j'ai compris ce décorateur permet d'instancier la classe avec une méthode spécifique, du coup ça a pas trop de sens de le mettre sur la méthode __init__, et en plus il me semble que ça fout la merde avec le "self"
     def __init__(self, cookie_file: str):
         self.session = requests.Session()
         self.api_token = ""
-        self.set_session_params(cookie_file)
+        self.set_session_params(cookie_file=cookie_file)
         self.get_user_data()
         pass
 
@@ -29,7 +29,7 @@ class DeezerAPI:
 
     def get_user_data(self):
         results = self.get_api("deezer.getUserData")
-        print(results)
+        # print(results)
         self.api_token = results['checkForm']
         user_info = results["USER"]
         self.user_id = user_info["USER_ID"]
@@ -46,7 +46,10 @@ class DeezerAPI:
         }
         resp = self.session.post(self.API_URL, params=payload, json=body)
         resp.raise_for_status()
-        return resp.json()['results']
+        if resp.text != '':
+            return resp.json()['results']
+        else:
+            return
 
     def get_profile_data(self, tab: str, nb: int = 100) -> dict:
         body = {
@@ -65,8 +68,8 @@ class DeezerAPI:
         }
         results = self.get_api("deezer.pageArtist", body)
         return results
-    
-    def get_songs(self, album_id: int):
+
+    def get_songs(self, album_id: int): #J'ai trouvé un moyen de plus en avoir besoin, j'arrive à récupérer les tracks depuis la requête page artist
         body = {
             "alb_id": album_id,
             "nb": 100,

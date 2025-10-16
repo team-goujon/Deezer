@@ -1,9 +1,9 @@
 import pandas as pd
-from temp_api import TEMP_DeezerAPI
+from service.api import DeezerAPI
 
 class DeezerService():
-    def __init__(self):
-        self.session = TEMP_DeezerAPI()
+    def __init__(self, cookies: str):
+        self.session = DeezerAPI(cookies)
         self.number_random_artists = 10
         self.number_selected_artists = 4
         self.number_tracks_by_artist = 3
@@ -44,16 +44,14 @@ class DeezerService():
 
     def get_user_favorites_artists(self) -> pd.DataFrame:
         try:
-            data = self.session.get_pageprofile('artists')
-            data = data['results']['TAB']['artists']['data']
+            data = self.session.get_profile_data(tab='artists')
+            data = data['TAB']['artists']['data']
             favorite_artists = pd.DataFrame(data)
             favorite_artists.sort_values(by='ART_NAME',inplace=True)
             favorite_artists.reset_index(drop=True,inplace=True)
             return favorite_artists[['ART_ID', 'ART_NAME', 'ART_PICTURE']]
         except KeyError:
             print("La réponse de la requête n'est pas conforme")
-            print(data['error'])
-
 
     def get_user_selection(self, user_favorites: pd.DataFrame):
         question = "Choisissez des artistes parmis vos favoris."
@@ -78,8 +76,8 @@ class DeezerService():
         return all_artists
 
     def get_related_artists(self, artist_id: int) -> pd.DataFrame:
-        data = self.session.get_pageArtist(artist_id, 1)
-        data = data['results']['RELATED_ARTISTS']['data']
+        data = self.session.get_artist_data(artist_id=artist_id, tab=1)
+        data = data['RELATED_ARTISTS']['data']
         relative_artists = pd.DataFrame(data)
         return relative_artists[['ART_ID', 'ART_NAME', 'ART_PICTURE']]
 
@@ -91,8 +89,8 @@ class DeezerService():
         return tracks_list
 
     def get_tracks_by_artist(self, artist_id: int) -> pd.DataFrame:
-        data = self.session.get_pageArtist(artist_id, 0)
-        data = data['results']['ALBUMS']['data']
+        data = self.session.get_artist_data(artist_id=artist_id)
+        data = data['ALBUMS']['data']
         albums = pd.DataFrame(data)
         albums['SONGS_LIST'] = albums['SONGS'].apply(lambda x: x['data'])
         tracks_by_album = albums['SONGS_LIST'].to_numpy()
@@ -102,24 +100,26 @@ class DeezerService():
         return tracks[['SNG_ID','SNG_TITLE','ART_ID']]
 
     def save_playlist_on_deezer_profile(self, name: str, public: bool, songs_df: pd.DataFrame):
-        self.session.create_playlist(name, public)
+        self.session.create_playlist(name=name, description="", public=public)
         playlist_id = self.get_last_playlist_id()
         songs_list_formated = [[s,0] for s in songs_df['SNG_ID']]
-        self.session.add_songs_to_playlist(playlist_id, songs_list_formated)
+        self.session.add_songs_to_playlist(songs_list=songs_list_formated, playlist_id=playlist_id)
         pass
 
     def get_last_playlist_id(self) -> str:
-        data = self.session.get_pageprofile('home')
-        user_playlists = data['results']['TAB']['home']['playlists']
+        data = self.session.get_profile_data(tab='home')
+        user_playlists = data['TAB']['home']['playlists']
         last_playlist = user_playlists['data'][0]
         return last_playlist['PLAYLIST_ID']
 
 
 if __name__ == '__main__':
-    newServ = DeezerService()
-    test = newServ.get_user_favorites_artists()
+    newServ = DeezerService('cookies.txt')
+    # test = newServ.get_user_favorites_artists()
     # newServ.set_number_random_artists("tut")
     # print(newServ.number_random_artists)
-    # test = newServ.create_playlist('TestFav3', auto=False, public=False, include_relative=True)
+    # test = newServ.create_playlist('TestMergeFav', auto=False, public=False, include_relative=True)
+    test = newServ.create_playlist('TestMergeSel', auto=False, public=False)
+    test = newServ.create_playlist('TestMergeRan', auto=True, public=False)
 
 
