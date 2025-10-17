@@ -113,13 +113,3 @@ class DeezerService():
         return last_playlist['PLAYLIST_ID']
 
 
-if __name__ == '__main__':
-    newServ = DeezerService('cookies.txt')
-    # test = newServ.get_user_favorites_artists()
-    # newServ.set_number_random_artists("tut")
-    # print(newServ.number_random_artists)
-    # test = newServ.create_playlist('TestMergeFav', auto=False, public=False, include_relative=True)
-    test = newServ.create_playlist('TestMergeSel', auto=False, public=False)
-    test = newServ.create_playlist('TestMergeRan', auto=True, public=False)
-
-

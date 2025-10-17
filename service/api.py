@@ -4,7 +4,6 @@ from http.cookiejar import MozillaCookieJar
 class DeezerAPI:
     API_URL = "https://www.deezer.com/ajax/gw-light.php"
 
-    # @classmethod -> de ce que j'ai compris ce décorateur permet d'instancier la classe avec une méthode spécifique, du coup ça a pas trop de sens de le mettre sur la méthode __init__, et en plus il me semble que ça fout la merde avec le "self"
     def __init__(self, cookie_file: str):
         self.session = requests.Session()
         self.api_token = ""
@@ -29,7 +28,6 @@ class DeezerAPI:
 
     def get_user_data(self):
         results = self.get_api("deezer.getUserData")
-        # print(results)
         self.api_token = results['checkForm']
         user_info = results["USER"]
         self.user_id = user_info["USER_ID"]
@@ -69,7 +67,7 @@ class DeezerAPI:
         results = self.get_api("deezer.pageArtist", body)
         return results
 
-    def get_songs(self, album_id: int): #J'ai trouvé un moyen de plus en avoir besoin, j'arrive à récupérer les tracks depuis la requête page artist
+    def get_songs(self, album_id: int):
         body = {
             "alb_id": album_id,
             "nb": 100,
@@ -88,7 +86,6 @@ class DeezerAPI:
             "collaborative": False
         }
         results = self.get_api("playlist.create", body)
-        print(results)
         pass
 
     def add_songs_to_playlist(self, songs_list: list, playlist_id: int):
@@ -100,5 +97,4 @@ class DeezerAPI:
             "replace": False
         }
         results = self.get_api("playlist.addSongs", body)
-        print(results)
         pass

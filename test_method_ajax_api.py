@@ -15,6 +15,7 @@ class test_method_ajax_api():
         self.test(method,body,recover_user_id,see_keys)
         pass
 
+    # @classmethod
     def set_session_params(self, cookie_file: str):
         cj = MozillaCookieJar(cookie_file)
         cj.load(ignore_discard=True, ignore_expires=True)
@@ -23,7 +24,8 @@ class test_method_ajax_api():
             'User-Agent': 'Mozilla/5.0 (compatible)',
             'Referer': 'https://www.deezer.com/',
             'Origin': 'https://www.deezer.com',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            "X-Requested-With": "XMLHttpRequest"
         })
         pass
 
@@ -57,6 +59,8 @@ class test_method_ajax_api():
             body["user_id"] = self.user_id
             print(body)
         resp = self.ajax_api_request(method, body)
+        print(resp)
+        print(resp.text)
         if resp.text != '':
             data = resp.json()
             print(data.keys())
@@ -65,6 +69,8 @@ class test_method_ajax_api():
                 print(data["error"])
             if see_keys:
                 self.go_through_keys(data)
+        else:
+            print("réponse vide")
         pass
 
     def go_through_keys(self, data: json):
@@ -116,14 +122,14 @@ if __name__ == "__main__":
     # ARTIST_IDS = [111636522,10192306,375308,817174,810503,137537962,1355757,167710,58801,1296451] #liste d'aritste avec des trucs pour faire plaisir à Nico parce qu'il m'a fait péter les couilles
 
     #body pageArtist
-    # method = "deezer.pageArtist"
-    # recover_user_id = False
-    # body = {
-    #         "art_id": 810503,
-    #         "lang": "fr",
-    #         "count": 20,
-    #         "tab": 1 #0 pour les albums, 1 pour tous les artistes semblables
-    #     }
+    method = "deezer.pageArtist"
+    recover_user_id = False
+    body = {
+            "art_id": 810503,
+            "lang": "fr",
+            "count": 20,
+            "tab": 1 #0 pour les albums, 1 pour tous les artistes semblables
+        }
 
     #body pageProfile
     # method = "deezer.pageProfile"
@@ -135,15 +141,16 @@ if __name__ == "__main__":
     #     }
 
     # body create playlist
-    method = "playlist.create"
-    recover_user_id = False
-    body = {
-            "title": "test",
-            "description": "description",
-            "status": 1,
-            "tags": "",
-            "songs": [],
-            "collaborative": False
-        }
+    # method = "playlist.create"
+    # recover_user_id = False
+    # body = {
+    #         "title": "test",
+    #         "description": "description",
+    #         "status": 1,
+    #         "tags": "",
+    #         "songs": [],
+    #         "collaborative": False
+    #     }
 
-    test = test_method_ajax_api("cookies.txt", method, body, recover_user_id, False)
+    test = test_method_ajax_api("cookies.txt", method, body, recover_user_id, True)
+
