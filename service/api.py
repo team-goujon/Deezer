@@ -31,8 +31,6 @@ class DeezerAPI:
         self.api_token = results['checkForm']
         user_info = results["USER"]
         self.user_id = user_info["USER_ID"]
-        if not self.api_token:
-            raise RuntimeError("Impossible de récupérer checkForm (vérifier le cookie 'arl' et la session).")
         pass
 
     def get_api(self, method: str, body: dict = None) -> dict:
