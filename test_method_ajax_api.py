@@ -15,6 +15,7 @@ class test_method_ajax_api():
         self.test(method,body,recover_user_id,see_keys)
         pass
 
+    # @classmethod
     def set_session_params(self, cookie_file: str):
         cj = MozillaCookieJar(cookie_file)
         cj.load(ignore_discard=True, ignore_expires=True)
@@ -23,7 +24,8 @@ class test_method_ajax_api():
             'User-Agent': 'Mozilla/5.0 (compatible)',
             'Referer': 'https://www.deezer.com/',
             'Origin': 'https://www.deezer.com',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            "X-Requested-With": "XMLHttpRequest"
         })
         pass
 
@@ -41,7 +43,7 @@ class test_method_ajax_api():
 
     def get_apitoken_and_userid(self):
         resp = self.ajax_api_request("deezer.getUserData",{})
-        print(resp)
+        # print(resp)
         js = resp.json()
         if isinstance(js, dict):
             results = js.get('results') or {}
@@ -57,13 +59,18 @@ class test_method_ajax_api():
             body["user_id"] = self.user_id
             print(body)
         resp = self.ajax_api_request(method, body)
-        data = resp.json()
-        print(data.keys())
-        if data['error'] != []:
-            print("Erreur dans la requête")
-            print(data["error"])
-        if see_keys:
-            self.go_through_keys(data)
+        print(resp)
+        print(resp.text)
+        if resp.text != '':
+            data = resp.json()
+            print(data.keys())
+            if data['error'] != []:
+                print("Erreur dans la requête")
+                print(data["error"])
+            if see_keys:
+                self.go_through_keys(data)
+        else:
+            print("réponse vide")
         pass
 
     def go_through_keys(self, data: json):
@@ -120,8 +127,8 @@ if __name__ == "__main__":
     body = {
             "art_id": 810503,
             "lang": "fr",
-            "count": 50, #Pas sûr que ce soit utile, avant j'avais mis "nb", et ça change rien
-            "tab": 0 #0 pour les albums, 1 pour 20 artistes semblables
+            "count": 20,
+            "tab": 1 #0 pour les albums, 1 pour tous les artistes semblables
         }
 
     #body pageProfile
@@ -129,8 +136,21 @@ if __name__ == "__main__":
     # recover_user_id = True
     # body = {
     #         # 'user_id': user_id,
-    #         'tab': 'artists',
+    #         'tab': 'home',
     #         'nb': 10000
     #     }
 
+    # body create playlist
+    # method = "playlist.create"
+    # recover_user_id = False
+    # body = {
+    #         "title": "test",
+    #         "description": "description",
+    #         "status": 1,
+    #         "tags": "",
+    #         "songs": [],
+    #         "collaborative": False
+    #     }
+
     test = test_method_ajax_api("cookies.txt", method, body, recover_user_id, True)
+
