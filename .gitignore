@@ -1,5 +1,8 @@
 #Cookies deezer
 cookies.txt
+cookies.ini
+
+# VS Code
 *.vscode
 
 # Byte-compiled / optimized / DLL files

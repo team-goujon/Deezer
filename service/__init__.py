@@ -2,8 +2,8 @@ import pandas as pd
 from service.api import DeezerAPI
 
 class DeezerService():
-    def __init__(self, cookies: str):
-        self.session = DeezerAPI(cookies)
+    def __init__(self):
+        self.session = DeezerAPI()
         self.number_random_artists = 10
         self.number_selected_artists = 4
         self.number_tracks_by_artist = 3

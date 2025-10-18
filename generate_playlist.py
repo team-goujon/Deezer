@@ -1,7 +1,7 @@
 from service import DeezerService
 
 def main():
-    newServ = DeezerService('cookies.txt')
+    newServ = DeezerService()
     playlist_name = input('Entrez le nom de la playlist: ')
     public = False
     if input('public playlist ? y/n ') == "y":
