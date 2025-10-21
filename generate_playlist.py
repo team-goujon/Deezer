@@ -1,19 +1,53 @@
 from service import DeezerService
+import pandas as pd
+import logging
+from logging_manager import log_function
+logger = logging.getLogger(__name__)
 
 def main():
-    newServ = DeezerService('cookies.txt')
-    playlist_name = input('Entrez le nom de la playlist: ')
-    public = False
-    if input('public playlist ? y/n ') == "y":
-        public = True
-    random = True
-    relative = False
-    if input('Artists manual selection ? y/n ') == "y":
-        random = False
-        if input('Include relatives ? y/n ') == "y":
+    try:
+        newServ = DeezerService('cookies.txt')
+        playlist_name = input('Entrez le nom de la playlist: ')
+        public = yesno_input('La playlist est-elle publique ?')
+        n_artists = int_input("Combien d'artistes ?")
+        user_selection = pd.DataFrame([])
+        if yesno_input("Choisir les artistes manuellement ?"):
+            user_selection = get_user_selection(newServ, n_artists)
+        else:
+            newServ.number_random_artists = n_artists
+        relative = False
+        if yesno_input("Inclure les artistes semblables ?"):
             relative = True
-    newServ.create_playlist(playlist_name, random, public, relative)
-    pass
+        n_tracks = int_input("Combien de titres par artiste ?") 
+        newServ.number_tracks_by_artist = n_tracks
+        newServ.create_playlist(playlist_name, public, user_selection, relative)
+        pass
+    except Exception as e:
+        logger.error(f"{e.__class__.__name__}: {e}")
+
+@log_function
+def get_user_selection(service: DeezerService, number_selected_artists: int) -> pd.DataFrame:
+    user_favorites = service.get_user_favorites_artists()
+    with pd.option_context('display.max_rows', None):
+        print(user_favorites['ART_NAME'])
+    selected_index = []
+    for i in range(1,number_selected_artists+1):
+        n = int_input(f"Entrez l'indice de l'artiste {i}: ")
+        selected_index.append(n)
+    selected_artists = user_favorites.loc[selected_index,:]
+    return selected_artists
+
+def yesno_input(prompt: str) -> bool:
+    resp = input(prompt + ' (y/n): ')
+    if resp.lower() not in ['y', 'n']:
+        raise ValueError("Input is not 'y' or 'n'")
+    return resp.lower() == 'y'
+
+def int_input(prompt: str) -> int:  
+    resp = input(prompt + ': ')
+    if resp.isdigit() == False:
+        raise ValueError("Input is not a valid integer")
+    return int(resp)
 
 if __name__ == '__main__':
     main()
