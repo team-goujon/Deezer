@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from service.api import DeezerAPI
 import logging
 from logging_manager import log_function
@@ -15,13 +16,12 @@ class DeezerService():
         try:
             user_favorites = self.get_user_favorites_artists()
             if user_selection.empty:
-                selected_artists = user_favorites.sample(n=self.number_random_artists)
+                self.selected_artists = user_favorites.sample(n=self.number_random_artists)
             else:
-                selected_artists = user_selection
-            self.selected_artists = selected_artists
+                self.selected_artists = user_selection
             if include_relative:
-                selected_artists = self.__add_related_artists()
-            track_list = self.__set_random_tracks_list(selected_artists, False)
+                self.selected_artists = self.__add_related_artists()
+            track_list = self.__set_random_tracks_list()
             self.__save_playlist_on_deezer_profile(name, public, track_list)
             pass
         except Exception as e:
@@ -55,7 +55,6 @@ class DeezerService():
             logger.warning(f"{dse.__class__.__name__}: {dse.message}")
             return selected_artists
 
-    @log_function
     def __get_related_artists(self, artist_id: str) -> pd.DataFrame:
         try:
             data = self.session.get_artist_data(artist_id, tab=1)
@@ -67,10 +66,14 @@ class DeezerService():
         except DeezerServiceError as dse:  
             logger.warning(f"{dse.__class__.__name__}: {dse.message}")
             return pd.DataFrame([])
-        
-    def __set_random_tracks_list(self, artist_list: pd.DataFrame, related: bool):
+    
+    @log_function
+    def __set_random_tracks_list(self):
+        artist_list = self.selected_artists['ART_ID'].to_numpy()
+        artist_list = np.append(artist_list, '352227652')
+        logger.debug(f"Selected artists IDs: {artist_list}")
         tracks_list = pd.DataFrame([])
-        for a in artist_list['ART_ID']:
+        for a in artist_list:
             artist_tracks = self.__get_tracks_by_artist(a)
             if not artist_tracks.empty:
                 tracks_list = pd.concat([tracks_list,artist_tracks.sample(n=self.number_tracks_by_artist)], ignore_index=True)
@@ -116,7 +119,7 @@ class DeezerService():
             if col not in df.columns:
                 raise DeezerServiceError(f"{name} data is missing required column: {col}")
         pass
-
+    
 class DeezerServiceError(Exception):
     """Base class for exceptions in DeezerService."""
     def __init__(self, message: str):
