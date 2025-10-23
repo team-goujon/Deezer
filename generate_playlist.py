@@ -15,9 +15,7 @@ def main():
             user_selection = get_user_selection(newServ, n_artists)
         else:
             newServ.number_random_artists = n_artists
-        relative = False
-        if yesno_input("Inclure les artistes semblables ?"):
-            relative = True
+        relative = yesno_input("Inclure les artistes semblables ?")
         n_tracks = int_input("Combien de titres par artiste ?") 
         newServ.number_tracks_by_artist = n_tracks
         newServ.create_playlist(playlist_name, public, user_selection, relative)
@@ -39,15 +37,15 @@ def get_user_selection(service: DeezerService, number_selected_artists: int) -> 
 
 def yesno_input(prompt: str) -> bool:
     resp = input(prompt + ' (y/n): ')
-    if resp.lower() not in ['y', 'n']:
-        raise ValueError("Input is not 'y' or 'n'")
     return resp.lower() == 'y'
 
 def int_input(prompt: str) -> int:  
-    resp = input(prompt + ': ')
-    if resp.isdigit() == False:
-        raise ValueError("Input is not a valid integer")
-    return int(resp)
+    while True:
+        resp = input(prompt + ': ')
+        if resp.isdigit() == False:
+            print("Veuillez entrer un entier valide.")
+        else:
+            return int(resp)
 
 if __name__ == '__main__':
     main()
