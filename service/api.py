@@ -19,10 +19,10 @@ class DeezerAPI:
         pass
 
     def get_cookie_box(self):
+        cookie_box = {}
         try:
             config = ConfigParser()
             config.read(self.CONFIG_FILE)
-            cookie_box = {}
             for name in ['sid', 'arl']:
                 cookie_box[name] = config.get("cookies", name)
             if not(cookie_box['sid'] and cookie_box['arl']):
@@ -35,8 +35,8 @@ class DeezerAPI:
             cookie_box = self.save_cookies(config)
         except Exception as e:
             logger.error(f"Error reading config.ini: {e}")
-        finally:
-            return cookie_box
+        
+        return cookie_box
 
     def save_cookies(self, config):
         cookie_box = {}
