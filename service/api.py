@@ -3,7 +3,7 @@ import time
 from configparser import ConfigParser, NoSectionError, NoOptionError
 from selenium import webdriver
 import logging
-from logging_manager import *
+from utils.logging_manager import *
 logger = logging.getLogger(__name__)
 
 class DeezerAPI:

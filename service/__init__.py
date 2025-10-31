@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from service.api import DeezerAPI
 import logging
-from logging_manager import *
+from utils.logging_manager import *
 logger = logging.getLogger(__name__)
 
 class DeezerService():

@@ -1,7 +1,7 @@
 from service import DeezerService
 import pandas as pd
 import logging
-from logging_manager import *
+from utils.logging_manager import *
 logger = logging.getLogger(__name__)
 
 def main():
