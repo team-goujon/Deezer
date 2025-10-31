@@ -1,7 +1,7 @@
 from service import DeezerService
 import pandas as pd
 import logging
-from logging_manager import log_function
+from logging_manager import *
 logger = logging.getLogger(__name__)
 
 def main():
@@ -12,7 +12,8 @@ def main():
         n_artists = int_input("Combien d'artistes ?")
         user_selection = pd.DataFrame([])
         if yesno_input("Choisir les artistes manuellement ?"):
-            user_selection = get_user_selection(newServ, n_artists)
+            user_favorites = newServ.get_user_favorites_artists()
+            user_selection = get_user_selection(user_favorites, n_artists)
         else:
             newServ.number_random_artists = n_artists
         relative = yesno_input("Inclure les artistes semblables ?")
@@ -23,9 +24,8 @@ def main():
     except Exception as e:
         logger.error(f"{e.__class__.__name__}: {e}")
 
-@log_function
-def get_user_selection(service: DeezerService, number_selected_artists: int) -> pd.DataFrame:
-    user_favorites = service.get_user_favorites_artists()
+@debugging
+def get_user_selection(user_favorites: pd.DataFrame, number_selected_artists: int) -> pd.DataFrame:
     with pd.option_context('display.max_rows', None):
         print(user_favorites['ART_NAME'])
     selected_index = []

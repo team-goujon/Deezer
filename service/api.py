@@ -1,7 +1,7 @@
 import requests
 from http.cookiejar import MozillaCookieJar
 import logging
-from logging_manager import log_function
+from logging_manager import *
 logger = logging.getLogger(__name__)
 
 class DeezerAPI:
@@ -87,7 +87,7 @@ class DeezerAPI:
         results = self.__get_api("song.getListByAlbum", body)
         return results
 
-    @log_function
+    @debugging
     def create_playlist(self, name: str, description: str, public: bool):
         body = {
             "title": name,

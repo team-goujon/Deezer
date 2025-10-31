@@ -27,21 +27,21 @@ config_dict = {
             'level': logging.DEBUG,
             'propagate': False
         },
-    'service.api_test': {
-            'handlers': ['console'],
-            'level': logging.DEBUG,
-            'propagate': False
+        'service.api': {
+                'handlers': ['console'],
+                'level': logging.DEBUG,
+                'propagate': False
         },
-    'service': {
-            'handlers': ['console'],
-            'level': logging.DEBUG,
-            'propagate': False
+        'service': {
+                'handlers': ['console'],
+                'level': logging.DEBUG,
+                'propagate': False
         }
     }
 }
 logging.config.dictConfig(config_dict)
 
-def log_function(func):
+def debugging(func):
     def wrapper(*args, **kwargs):
         logger = logging.getLogger(func.__module__)
         logger.debug(f"Entering: {func.__name__} with args: {args} kwargs: {kwargs}")

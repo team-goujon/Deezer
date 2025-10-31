@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from service.api import DeezerAPI
 import logging
-from logging_manager import log_function
+from logging_manager import *
 logger = logging.getLogger(__name__)
 
 class DeezerService():
@@ -38,7 +38,7 @@ class DeezerService():
         except Exception as e:
             logger.error(f"{e.__class__.__name__}: {e}")
 
-    @log_function
+    @debugging
     def __add_related_artists(self) -> pd.DataFrame:
         try:
             selected_artists = self.selected_artists
@@ -62,12 +62,13 @@ class DeezerService():
                 raise DeezerServiceError(f"Artist ID {artist_id} has no related artists data")
             data = data['RELATED_ARTISTS']['data']
             relative_artists = pd.DataFrame(data)
+            self.__checking_dataframe(relative_artists, ['ART_ID', 'ART_NAME', 'ART_PICTURE'], f"Related artists for artist ID {artist_id}")
             return relative_artists[['ART_ID', 'ART_NAME', 'ART_PICTURE']]
         except DeezerServiceError as dse:  
             logger.warning(f"{dse.__class__.__name__}: {dse.message}")
             return pd.DataFrame([])
     
-    @log_function
+    @debugging
     def __set_random_tracks_list(self):
         artist_list = self.selected_artists['ART_ID'].to_numpy()
         artist_list = np.append(artist_list, '352227652')
