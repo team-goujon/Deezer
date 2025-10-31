@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 def main():
     try:
-        newServ = DeezerService('cookies.txt')
+        newServ = DeezerService()
         playlist_name = input('Entrez le nom de la playlist: ')
         public = yesno_input('La playlist est-elle publique ?')
         n_artists = int_input("Combien d'artistes ?")
