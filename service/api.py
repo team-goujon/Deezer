@@ -2,6 +2,9 @@ import requests
 import time
 from configparser import ConfigParser, NoSectionError, NoOptionError
 from selenium import webdriver
+import logging
+from logging_manager import *
+logger = logging.getLogger(__name__)
 
 class DeezerAPI:
     API_URL = "https://www.deezer.com/ajax/gw-light.php"
@@ -81,25 +84,35 @@ class DeezerAPI:
         pass
     
     def get_user_data(self):
-        results = self.get_api("deezer.getUserData")
+        results = self.__get_api("deezer.getUserData")
         self.api_token = results['checkForm']
         user_info = results["USER"]
         self.user_id = user_info["USER_ID"]
         pass
 
-    def get_api(self, method: str, body: dict = None) -> dict:
-        payload = {
-            "api_version": "1.0",
-            "api_token": self.api_token,
-            "input": "3",
-            "method": method,
-        }
-        resp = self.session.post(self.API_URL, params=payload, json=body)
-        resp.raise_for_status()
-        if resp.text != '':
-            return resp.json()['results']
-        else:
-            return
+    def __get_api(self, method: str, body: dict = None) -> dict:
+        try :
+            logger.info(f"Calling API method: {method} with body: {body}")
+            payload = {
+                "api_version": "1.0",
+                "api_token": self.api_token,
+                "input": "3",
+                "method": method,
+            }
+            resp = self.session.post(self.API_URL, params=payload, json=body)
+            resp.raise_for_status()
+            logger.debug(f"Response status code: {resp.status_code}")
+            if resp.text != '':
+                resp_json = resp.json()
+                if resp_json['error']:
+                    raise Exception(f"Request Error: {resp_json['error']}")
+                return resp_json['results']
+            else:
+                logger.debug(f"No data returned")
+                return None
+        except Exception as e:
+            logger.debug(e)
+            return None
 
     def get_profile_data(self, tab: str, nb: int = 100) -> dict:
         body = {
@@ -107,7 +120,7 @@ class DeezerAPI:
             'tab': tab,
             'nb': nb
         }
-        results = self.get_api("deezer.pageProfile", body)
+        results = self.__get_api("deezer.pageProfile", body)
         return results
 
     def get_artist_data(self, artist_id: int, tab: int = 0) -> list:
@@ -116,7 +129,7 @@ class DeezerAPI:
             "lang": "fr",
             "tab": tab
         }
-        results = self.get_api("deezer.pageArtist", body)
+        results = self.__get_api("deezer.pageArtist", body)
         return results
 
     def get_songs(self, album_id: int):
@@ -125,9 +138,10 @@ class DeezerAPI:
             "nb": 100,
             "start": 0
         }
-        results = self.get_api("song.getListByAlbum", body)
+        results = self.__get_api("song.getListByAlbum", body)
         return results
 
+    @debugging
     def create_playlist(self, name: str, description: str, public: bool):
         body = {
             "title": name,
@@ -137,7 +151,7 @@ class DeezerAPI:
             "songs": [],
             "collaborative": False
         }
-        results = self.get_api("playlist.create", body)
+        results = self.__get_api("playlist.create", body)
         pass
 
     def add_songs_to_playlist(self, songs_list: list, playlist_id: int):
@@ -148,5 +162,5 @@ class DeezerAPI:
             "order": 0,
             "replace": False
         }
-        results = self.get_api("playlist.addSongs", body)
+        results = self.__get_api("playlist.addSongs", body)
         pass
