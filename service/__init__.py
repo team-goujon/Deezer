@@ -6,8 +6,8 @@ from logging_manager import *
 logger = logging.getLogger(__name__)
 
 class DeezerService():
-    def __init__(self, cookies: str):
-        self.session = DeezerAPI(cookies)
+    def __init__(self):
+        self.session = DeezerAPI()
         self.number_random_artists: int = 10
         self.number_tracks_by_artist: int = 3
         pass

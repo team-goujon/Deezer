@@ -1,5 +1,11 @@
 # Deezer
 
+## Configuration
+Do it once:
+```
+cp config.ini.sample config.ini
+```
+
 ## Usage
 ```
 pip install -r requirements.txt
