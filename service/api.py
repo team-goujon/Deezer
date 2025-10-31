@@ -28,13 +28,13 @@ class DeezerAPI:
             if not(cookie_box['sid'] and cookie_box['arl']):
                 cookie_box = self.save_cookies(config)
         except NoSectionError as nse:
-            print(f'NoSectionError {nse}')
+            logger.debug(f'NoSectionError {nse}')
             cookie_box = self.save_cookies(config)
         except NoOptionError as noe:
-            print(f'NoOptionError{noe}')
+            logger.debug(f'NoOptionError{noe}')
             cookie_box = self.save_cookies(config)
         except Exception as e:
-            print(f"Error reading config.ini: {e}")
+            logger.error(f"Error reading config.ini: {e}")
         finally:
             return cookie_box
 
@@ -62,7 +62,7 @@ class DeezerAPI:
                 with open(self.CONFIG_FILE, "w") as f:
                     config.write(f)
             except Exception as e:
-                print(f"Warning: couldn't save cookie file {self.CONFIG_FILE}: {e}")
+                logger.error(f"Couldn't save cookie file {self.CONFIG_FILE}: {e}")
         finally:
             try:
                 driver.quit()
