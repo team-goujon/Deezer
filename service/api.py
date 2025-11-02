@@ -4,6 +4,7 @@ from configparser import ConfigParser, NoSectionError, NoOptionError
 from selenium import webdriver
 import logging
 from utils.logging_manager import *
+from utils.schema import deezer_data_validation
 logger = logging.getLogger(__name__)
 
 class DeezerAPI:
@@ -114,6 +115,7 @@ class DeezerAPI:
             logger.debug(e)
             return None
 
+    @deezer_data_validation
     def get_profile_data(self, tab: str, nb: int = 100) -> dict:
         body = {
             'user_id': self.user_id,
@@ -121,15 +123,20 @@ class DeezerAPI:
             'nb': nb
         }
         results = self.__get_api("deezer.pageProfile", body)
+        if tab == 'home':
+            results = {'TAB': results}
         return results
 
-    def get_artist_data(self, artist_id: int, tab: int = 0) -> list:
+    @deezer_data_validation
+    def get_artist_data(self, artist_id: str, tab: int = 0) -> dict:
         body = {
             "art_id": artist_id,
             "lang": "fr",
             "tab": tab
         }
         results = self.__get_api("deezer.pageArtist", body)
+        # if tab == 0 and artist_id == '243':
+        #     results = {'TAB': results}
         return results
 
     def get_songs(self, album_id: int):

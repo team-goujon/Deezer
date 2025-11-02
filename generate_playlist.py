@@ -2,6 +2,7 @@ from service import DeezerService
 import pandas as pd
 import logging
 from utils.logging_manager import *
+from utils.schema import *
 logger = logging.getLogger(__name__)
 
 def main():
@@ -47,5 +48,21 @@ def int_input(prompt: str) -> int:
         else:
             return int(resp)
 
+def test():
+    try:
+        logger.debug("DeezerService test method called")
+        service = DeezerService()
+        artist_data = service.session.get_profile_data(tab='home')
+        print(service.session.get_profile_data.__name__)
+        # print(artist_data['RELATED_ARTISTS'].keys())
+        # print(type(artist_data['ALBUMS']['data']))
+        # print(type(artist_data['ALBUMS']['data'][0]))
+        validate(instance=artist_data, schema=playlist_id_schema,)
+        logger.debug("Data structure is valid according to schema")
+    except ValidationError as ve:
+        logger.error(f"ValidationError: {ve.message}")
+    
+
 if __name__ == '__main__':
+    # test()
     main()
