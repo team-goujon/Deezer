@@ -5,6 +5,7 @@ from selenium import webdriver
 import logging
 from utils.logging_manager import *
 from utils.schema import deezer_data_validation
+from utils.exceptions import DeezerAPIError
 logger = logging.getLogger(__name__)
 
 class DeezerAPI:
@@ -106,7 +107,7 @@ class DeezerAPI:
             if resp.text != '':
                 resp_json = resp.json()
                 if resp_json['error']:
-                    raise Exception(f"Request Error: {resp_json['error']}")
+                    raise DeezerAPIError(f"Request Error: {resp_json['error']}")
                 return resp_json['results']
             else:
                 logger.debug(f"No data returned")
