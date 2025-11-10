@@ -4,6 +4,7 @@ from configparser import ConfigParser, NoSectionError, NoOptionError
 from selenium import webdriver
 import logging
 from utils.logging_manager import *
+from utils.exceptions import LoginException
 logger = logging.getLogger(__name__)
 
 class DeezerAPI:
@@ -88,6 +89,8 @@ class DeezerAPI:
         self.api_token = results['checkForm']
         user_info = results["USER"]
         self.user_id = user_info["USER_ID"]
+        if self.user_id == 0:
+            raise LoginException("User is not logged in. Please check your cookies.")
         pass
 
     def __get_api(self, method: str, body: dict = None) -> dict:
