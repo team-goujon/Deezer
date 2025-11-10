@@ -82,7 +82,7 @@ class DeezerService():
             raise DeezerServiceError("No tracks found for the selected artists")
         return tracks_list
 
-    @debugging
+    # @debugging
     def __get_tracks_by_artist(self, artist_id: str) -> pd.DataFrame:
         try:
             data = self.session.get_artist_data(artist_id, tab=0)

@@ -124,8 +124,6 @@ class DeezerAPI:
             'nb': nb
         }
         results = self.__get_api("deezer.pageProfile", body)
-        if tab == 'home':
-            results = {'TAB': results}
         return results
 
     @deezer_data_validation
