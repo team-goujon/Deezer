@@ -39,7 +39,7 @@ class DeezerService():
             return favorite_artists[['ART_ID', 'ART_NAME', 'ART_PICTURE']]
         except ValidationError as e:
             logger.error(f"{e.__class__.__name__}: {e.message}")
-            raise DeezerServiceError("Failed to retrieve or validate user favorite artists data - exiting program.")
+            logger.error("Failed to retrieve or validate user favorite artists data - exiting program.")
 
     # @debugging
     def __add_related_artists(self) -> pd.DataFrame:
@@ -113,5 +113,5 @@ class DeezerService():
             return last_playlist['PLAYLIST_ID']
         except ValidationError as e:
             logger.error(f"{e.__class__.__name__}: {e.message}")
-            raise DeezerServiceError("Failed to retrieve or validate last playlist ID")
+            logger.error("Failed to retrieve or validate last playlist ID")
     
