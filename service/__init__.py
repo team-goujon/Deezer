@@ -68,7 +68,7 @@ class DeezerService():
             logger.warning(f"Failed to retrieve or validate related artists for artist ID {artist_id}")
             return pd.DataFrame([])
     
-    @debugging
+    # @debugging
     def __set_random_tracks_list(self):
         artist_list = self.selected_artists['ART_ID'].to_numpy()
         artist_list = np.append(artist_list, '352227652')

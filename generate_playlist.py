@@ -25,7 +25,6 @@ def main():
     except Exception as e:
         logger.error(f"{e.__class__.__name__}: {e}")
 
-@debugging
 def get_user_selection(user_favorites: pd.DataFrame, number_selected_artists: int) -> pd.DataFrame:
     with pd.option_context('display.max_rows', None):
         print(user_favorites['ART_NAME'])
@@ -48,23 +47,8 @@ def int_input(prompt: str) -> int:
         if resp.isdigit() == False:
             print("Veuillez entrer un entier valide.")
         else:
-            return int(resp)
+            return int(resp)   
 
-def test():
-    try:
-        logger.debug("DeezerService test method called")
-        service = DeezerService()
-        artist_data = service.session.get_profile_data(tab='home')
-        print(service.session.get_profile_data.__name__)
-        # print(artist_data['RELATED_ARTISTS'].keys())
-        # print(type(artist_data['ALBUMS']['data']))
-        # print(type(artist_data['ALBUMS']['data'][0]))
-        validate(instance=artist_data, schema=playlist_id_schema,)
-        logger.debug("Data structure is valid according to schema")
-    except ValidationError as ve:
-        logger.error(f"ValidationError: {ve.message}")
-    
 
 if __name__ == '__main__':
-    # test()
     main()
