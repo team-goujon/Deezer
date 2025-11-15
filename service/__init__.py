@@ -77,7 +77,8 @@ class DeezerService():
         for a in artist_list:
             artist_tracks = self.__get_tracks_by_artist(a)
             if not artist_tracks.empty:
-                tracks_list = pd.concat([tracks_list,artist_tracks.sample(n=self.number_tracks_by_artist)], ignore_index=True)
+                n_tracks = min(len(artist_tracks), self.number_tracks_by_artist)
+                tracks_list = pd.concat([tracks_list,artist_tracks.sample(n=n_tracks)], ignore_index=True)
         if tracks_list.empty:
             raise DeezerServiceError("No tracks found for the selected artists")
         return tracks_list
@@ -91,7 +92,7 @@ class DeezerService():
             tracks_by_album = albums['SONGS_LIST'].to_numpy()
             tracks_by_album = sum(tracks_by_album, [])
             tracks = pd.DataFrame(tracks_by_album)
-            tracks = tracks[tracks['ART_ID']==artist_id]
+            tracks = tracks[(tracks['ART_ID']==artist_id)&(tracks['DURATION']>80)&(tracks['READABLE']==True)]
             return tracks[['SNG_ID','SNG_TITLE','ART_ID']]
         except ValidationError as dse:
             logger.warning(f"{dse.__class__.__name__}: {dse.message}")

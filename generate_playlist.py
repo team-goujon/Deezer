@@ -30,8 +30,10 @@ def get_user_selection(user_favorites: pd.DataFrame, number_selected_artists: in
     with pd.option_context('display.max_rows', None):
         print(user_favorites['ART_NAME'])
     selected_index = []
-    for i in range(1,number_selected_artists+1):
-        n = int_input(f"Entrez l'indice de l'artiste {i}: ")
+    number_selected_artists = min(number_selected_artists, len(user_favorites))
+    print(f"Sélectionnez {number_selected_artists} artistes en entrant leurs indices:")
+    for i in range(number_selected_artists):
+        n = int_input(f"Artiste {i+1}: ")
         selected_index.append(n)
     selected_artists = user_favorites.loc[selected_index,:]
     return selected_artists
