@@ -1,6 +1,6 @@
 import requests
 import time
-from configparser import ConfigParser, NoSectionError, NoOptionError
+from configparser import NoSectionError, NoOptionError
 from selenium import webdriver
 from utils.configuration import *
 import logging

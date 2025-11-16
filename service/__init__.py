@@ -11,8 +11,8 @@ class DeezerService():
     def __init__(self):
         self.config = get_config_section("service")
         self.session = DeezerAPI()
-        self.number_random_artists = int(self.config.get("random_artists_number", 10))
-        self.number_tracks_by_artist = int(self.config.get("tracks_by_artist_number", 3))
+        self.number_random_artists = int(self.config.get("random_artists_number"))
+        self.number_tracks_by_artist = int(self.config.get("tracks_by_artist_number"))
         pass
 
     def create_playlist(self, name: str, public: bool, user_selection: pd.DataFrame, include_relative: bool = False):
