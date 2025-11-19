@@ -3,7 +3,7 @@ import time
 from configparser import ConfigParser, NoSectionError, NoOptionError
 from selenium import webdriver
 import logging
-from utils.logging_manager import *
+from utils.logging_manager import debugging
 from utils.schema import deezer_data_validation
 from utils.exceptions import DeezerAPIError
 logger = logging.getLogger(__name__)
@@ -134,8 +134,6 @@ class DeezerAPI:
             "tab": tab
         }
         results = self.__get_api("deezer.pageArtist", body)
-        # if tab == 0 and artist_id == '243':
-        #     results = {'TAB': results}
         return results
 
     def get_songs(self, album_id: int):

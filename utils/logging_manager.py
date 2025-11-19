@@ -5,7 +5,7 @@ config_dict = {
     'version': 1,
     'formatters': {
         'standard': {
-            'format': '%(asctime)s [%(levelname)s] %(name)s: %(funcName)s: %(message)s'
+            'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
         }
     },
     'handlers': {

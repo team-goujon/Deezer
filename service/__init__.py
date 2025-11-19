@@ -1,8 +1,7 @@
 import pandas as pd
-import numpy as np
 from service.api import DeezerAPI
 import logging
-from utils.logging_manager import *
+from utils.logging_manager import debugging
 from jsonschema import ValidationError
 from utils.exceptions import DeezerServiceError
 logger = logging.getLogger(__name__)
@@ -16,8 +15,8 @@ class DeezerService():
 
     def create_playlist(self, name: str, public: bool, user_selection: pd.DataFrame, include_relative: bool = False):
         try:
-            user_favorites = self.get_user_favorites_artists()
             if user_selection.empty:
+                user_favorites = self.get_user_favorites_artists()
                 self.selected_artists = user_favorites.sample(n=self.number_random_artists)
             else:
                 self.selected_artists = user_selection
@@ -39,7 +38,7 @@ class DeezerService():
             return favorite_artists[['ART_ID', 'ART_NAME', 'ART_PICTURE']]
         except ValidationError as e:
             logger.error(f"{e.__class__.__name__}: {e.message}")
-            logger.error("Failed to retrieve or validate user favorite artists data - exiting program.")
+            raise DeezerServiceError("Failed to retrieve or validate user's favorite artists")
 
     # @debugging
     def __add_related_artists(self) -> pd.DataFrame:
@@ -68,10 +67,10 @@ class DeezerService():
             logger.warning(f"Failed to retrieve or validate related artists for artist ID {artist_id}")
             return pd.DataFrame([])
     
-    # @debugging
+    @debugging
     def __set_random_tracks_list(self):
-        artist_list = self.selected_artists['ART_ID'].to_numpy()
-        artist_list = np.append(artist_list, '352227652')
+        artist_list = self.selected_artists['ART_ID'].to_list()
+        artist_list.append('352227652')
         logger.debug(f"Selected artists IDs: {artist_list}")
         tracks_list = pd.DataFrame([])
         for a in artist_list:
@@ -89,13 +88,12 @@ class DeezerService():
             data = self.session.get_artist_data(artist_id, tab=0)
             albums = pd.DataFrame(data['ALBUMS']['data'])
             albums['SONGS_LIST'] = albums['SONGS'].apply(lambda x: x['data'] if 'data' in x else [])
-            tracks_by_album = albums['SONGS_LIST'].to_numpy()
-            tracks_by_album = sum(tracks_by_album, [])
-            tracks = pd.DataFrame(tracks_by_album)
-            tracks = tracks[(tracks['ART_ID']==artist_id)&(tracks['DURATION']>80)&(tracks['READABLE']==True)]
-            return tracks[['SNG_ID','SNG_TITLE','ART_ID']]
-        except ValidationError as dse:
-            logger.warning(f"{dse.__class__.__name__}: {dse.message}")
+            tracks = pd.DataFrame(albums['SONGS_LIST'].explode().tolist())
+            tracks['DURATION'] = tracks['DURATION'].astype(int)
+            filtered_tracks = tracks[(tracks['ART_ID']==artist_id)&(tracks['DURATION']>80)]
+            return filtered_tracks[['SNG_ID','SNG_TITLE','ART_ID']]
+        except ValidationError as e:
+            logger.warning(f"{e.__class__.__name__}: {e.message}")
             logger.warning(f"Failed to retrieve or validate tracks list for artist ID {artist_id}")
             return pd.DataFrame([])
 
@@ -114,5 +112,5 @@ class DeezerService():
             return last_playlist['PLAYLIST_ID']
         except ValidationError as e:
             logger.error(f"{e.__class__.__name__}: {e.message}")
-            logger.error("Failed to retrieve or validate last playlist ID")
+            raise DeezerServiceError("Failed to retrieve or validate user's playlists")
     

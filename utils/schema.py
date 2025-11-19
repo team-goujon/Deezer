@@ -1,4 +1,4 @@
-from jsonschema import validate, ValidationError
+from jsonschema import validate
 
 related_artists_schema = {
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -42,9 +42,10 @@ album_schema = {
             "properties": {
                 'SNG_ID': {'type': 'string'},
                 'SNG_TITLE': {'type': 'string'},
-                'ART_ID': {'type': 'string'}
+                'ART_ID': {'type': 'string'},
+                'DURATION': {'type': 'string'}
             },
-            "required": ['SNG_ID', 'SNG_TITLE', 'ART_ID'],
+            "required": ['SNG_ID', 'SNG_TITLE', 'ART_ID', 'DURATION'],
             "additionalProperties": True
         },
         "data_song": {
@@ -174,17 +175,18 @@ playlist_id_schema = {
     "additionalProperties": True
 }
 
+schema_dict = { 
+    'get_artist_data_0': album_schema,
+    'get_artist_data_1': related_artists_schema,
+    'get_profile_data_artists': favorites_schema,
+    'get_profile_data_home': playlist_id_schema
+}
+
 def deezer_data_validation(func):
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
-        if func.__name__ == 'get_artist_data' and kwargs['tab'] == 0:
-            validate(instance=result, schema=album_schema)
-        if func.__name__ == 'get_artist_data' and kwargs['tab'] == 1:
-            validate(instance=result, schema=related_artists_schema)
-        if func.__name__ == 'get_profile_data' and kwargs['tab'] == 'artists':
-            validate(instance=result, schema=favorites_schema)
-        if func.__name__ == 'get_profile_data' and kwargs['tab'] == 'home':
-            validate(instance=result, schema=playlist_id_schema)
+        key = f"{func.__name__}_{kwargs['tab']}"
+        validate(instance=result, schema=schema_dict[key])
         return result
     return wrapper
 
