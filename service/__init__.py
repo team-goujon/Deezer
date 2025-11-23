@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from service.api import DeezerAPI
-from utils.configuration import *
+from utils.configuration import get_config_section
 import logging
 from utils.logging_manager import *
 logger = logging.getLogger(__name__)

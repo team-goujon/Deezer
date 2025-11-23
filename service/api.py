@@ -2,7 +2,7 @@ import requests
 import time
 from configparser import NoSectionError, NoOptionError
 from selenium import webdriver
-from utils.configuration import *
+from utils.configuration import get_config_section, load_configuration
 import logging
 from utils.logging_manager import *
 from utils.exceptions import LoginException
