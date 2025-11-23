@@ -61,7 +61,7 @@ class DeezerAPI:
                 for name in ("sid", "arl"):
                     if name in cookie_box:
                         config.set("cookies", name, cookie_box[name])
-                with open(self.CONFIG_FILE, "w") as f:
+                with open(CONFIG_FILE, "w") as f:
                     config.write(f)
             except Exception as e:
                 logger.error(f"Couldn't save cookie file {CONFIG_FILE}: {e}")
