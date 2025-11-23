@@ -176,17 +176,17 @@ playlist_id_schema = {
 }
 
 schema_dict = { 
-    'get_artist_data_0': album_schema,
-    'get_artist_data_1': related_artists_schema,
-    'get_profile_data_artists': favorites_schema,
-    'get_profile_data_home': playlist_id_schema
+    ('get_artist_data','0'): album_schema,
+    ('get_artist_data','1'): related_artists_schema,
+    ('get_profile_data','artists'): favorites_schema,
+    ('get_profile_data','home'): playlist_id_schema
 }
 
 def deezer_data_validation(func):
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
-        key = f"{func.__name__}_{kwargs['tab']}"
-        validate(instance=result, schema=schema_dict[key])
+        schema = schema_dict[func.__name__,str(kwargs['tab'])]
+        validate(instance=result, schema=schema)
         return result
     return wrapper
 
