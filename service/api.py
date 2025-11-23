@@ -1,17 +1,19 @@
 import requests
 import time
-from configparser import ConfigParser, NoSectionError, NoOptionError
+from configparser import NoSectionError, NoOptionError
 from selenium import webdriver
+from utils.configuration import get_config_section, load_configuration
 import logging
 from utils.logging_manager import *
+from utils.exceptions import LoginException
 logger = logging.getLogger(__name__)
 
 class DeezerAPI:
     API_URL = "https://www.deezer.com/ajax/gw-light.php"
     LOGIN_URL = "https://account.deezer.com/fr/login/"
-    CONFIG_FILE = "config.ini"
 
     def __init__(self):
+        self.config = get_config_section("cookies")
         self.session = requests.Session()
         self.api_token = ""
         self.set_session_params()
@@ -21,24 +23,22 @@ class DeezerAPI:
     def get_cookie_box(self):
         cookie_box = {}
         try:
-            config = ConfigParser()
-            config.read(self.CONFIG_FILE)
             for name in ['sid', 'arl']:
-                cookie_box[name] = config.get("cookies", name)
+                cookie_box[name] = self.config[name]
             if not(cookie_box['sid'] and cookie_box['arl']):
-                cookie_box = self.save_cookies(config)
+                cookie_box = self.save_cookies()
         except NoSectionError as nse:
             logger.debug(f'NoSectionError {nse}')
-            cookie_box = self.save_cookies(config)
+            cookie_box = self.save_cookies()
         except NoOptionError as noe:
-            logger.debug(f'NoOptionError{noe}')
-            cookie_box = self.save_cookies(config)
+            logger.debug(f'NoOptionError {noe}')
+            cookie_box = self.save_cookies()
         except Exception as e:
-            logger.error(f"Error reading config.ini: {e}")
+            logger.error(f"Error reading {CONFIG_FILE}: {e}")
         
         return cookie_box
 
-    def save_cookies(self, config):
+    def save_cookies(self):
         cookie_box = {}
         print("Opening a browser for interactive Deezer login (please sign in in that window)...")
         driver = webdriver.Chrome()
@@ -53,6 +53,7 @@ class DeezerAPI:
                     if name in ("arl", "sid") and name not in cookie_box:
                         cookie_box[name] = cookie.get("value")
             # Save cookie_box in the config file under [cookies]
+            config = load_configuration()
             try:
                 if not config.has_section("cookies"):
                     config.add_section("cookies")
@@ -62,7 +63,7 @@ class DeezerAPI:
                 with open(self.CONFIG_FILE, "w") as f:
                     config.write(f)
             except Exception as e:
-                logger.error(f"Couldn't save cookie file {self.CONFIG_FILE}: {e}")
+                logger.error(f"Couldn't save cookie file {CONFIG_FILE}: {e}")
         finally:
             try:
                 driver.quit()
@@ -88,6 +89,8 @@ class DeezerAPI:
         self.api_token = results['checkForm']
         user_info = results["USER"]
         self.user_id = user_info["USER_ID"]
+        if self.user_id == 0:
+            raise LoginException("User is not logged in. Please check your cookies.")
         pass
 
     def __get_api(self, method: str, body: dict = None) -> dict:
