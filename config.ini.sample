@@ -1,3 +1,7 @@
 [cookies]
 sid =
 arl =
+
+[service]
+random_artists_number = 10
+tracks_by_artist_number = 3
