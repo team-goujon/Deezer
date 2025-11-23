@@ -1,7 +1,6 @@
 from service import DeezerService
 import pandas as pd
 import logging
-from utils.logging_manager import *
 logger = logging.getLogger(__name__)
 
 def main():
@@ -24,13 +23,14 @@ def main():
     except Exception as e:
         logger.error(f"{e.__class__.__name__}: {e}")
 
-@debugging
 def get_user_selection(user_favorites: pd.DataFrame, number_selected_artists: int) -> pd.DataFrame:
     with pd.option_context('display.max_rows', None):
         print(user_favorites['ART_NAME'])
     selected_index = []
-    for i in range(1,number_selected_artists+1):
-        n = int_input(f"Entrez l'indice de l'artiste {i}: ")
+    number_selected_artists = min(number_selected_artists, len(user_favorites))
+    print(f"Sélectionnez {number_selected_artists} artistes en entrant leurs indices:")
+    for i in range(number_selected_artists):
+        n = int_input(f"Artiste {i+1}: ")
         selected_index.append(n)
     selected_artists = user_favorites.loc[selected_index,:]
     return selected_artists
@@ -45,7 +45,8 @@ def int_input(prompt: str) -> int:
         if resp.isdigit() == False:
             print("Veuillez entrer un entier valide.")
         else:
-            return int(resp)
+            return int(resp)   
+
 
 if __name__ == '__main__':
     main()

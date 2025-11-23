@@ -4,8 +4,9 @@ from configparser import NoSectionError, NoOptionError
 from selenium import webdriver
 from utils.configuration import get_config_section, load_configuration
 import logging
-from utils.logging_manager import *
-from utils.exceptions import LoginException
+from utils.logging_manager import debugging
+from utils.schema import deezer_data_validation
+from utils.exceptions import DeezerAPIError, LoginException
 logger = logging.getLogger(__name__)
 
 class DeezerAPI:
@@ -108,7 +109,7 @@ class DeezerAPI:
             if resp.text != '':
                 resp_json = resp.json()
                 if resp_json['error']:
-                    raise Exception(f"Request Error: {resp_json['error']}")
+                    raise DeezerAPIError(f"Request Error: {resp_json['error']}")
                 return resp_json['results']
             else:
                 logger.debug(f"No data returned")
@@ -117,6 +118,7 @@ class DeezerAPI:
             logger.debug(e)
             return None
 
+    @deezer_data_validation
     def get_profile_data(self, tab: str, nb: int = 100) -> dict:
         body = {
             'user_id': self.user_id,
@@ -126,7 +128,8 @@ class DeezerAPI:
         results = self.__get_api("deezer.pageProfile", body)
         return results
 
-    def get_artist_data(self, artist_id: int, tab: int = 0) -> list:
+    @deezer_data_validation
+    def get_artist_data(self, artist_id: str, tab: int = 0) -> dict:
         body = {
             "art_id": artist_id,
             "lang": "fr",

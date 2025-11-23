@@ -1,9 +1,10 @@
 import pandas as pd
-import numpy as np
 from service.api import DeezerAPI
 from utils.configuration import get_config_section
 import logging
-from utils.logging_manager import *
+from utils.logging_manager import debugging
+from jsonschema import ValidationError
+from utils.exceptions import DeezerServiceError
 logger = logging.getLogger(__name__)
 
 class DeezerService():
@@ -17,8 +18,8 @@ class DeezerService():
 
     def create_playlist(self, name: str, public: bool, user_selection: pd.DataFrame, include_relative: bool = False):
         try:
-            user_favorites = self.get_user_favorites_artists()
             if user_selection.empty:
+                user_favorites = self.get_user_favorites_artists()
                 self.selected_artists = user_favorites.sample(n=self.number_random_artists)
             else:
                 self.selected_artists = user_selection
@@ -38,69 +39,65 @@ class DeezerService():
             favorite_artists.sort_values(by='ART_NAME',inplace=True)
             favorite_artists.reset_index(drop=True,inplace=True)
             return favorite_artists[['ART_ID', 'ART_NAME', 'ART_PICTURE']]
-        except Exception as e:
-            logger.error(f"{e.__class__.__name__}: {e}")
+        except ValidationError as e:
+            logger.error(f"{e.__class__.__name__}: {e.message}")
+            raise DeezerServiceError("Failed to retrieve or validate user's favorite artists")
 
-    @debugging
+    # @debugging
     def __add_related_artists(self) -> pd.DataFrame:
-        try:
-            selected_artists = self.selected_artists
-            related_artists = pd.DataFrame([])
-            for art_id in selected_artists['ART_ID']:
-                related = self.__get_related_artists(art_id)
-                related_artists = pd.concat([related_artists,related], ignore_index=True)
-            self.__checking_dataframe(related_artists, ['ART_ID', 'ART_NAME', 'ART_PICTURE'], "Related artists")
-            sorted_related_artists = related_artists.groupby(['ART_ID'],as_index=False).value_counts().sort_values(by="count", ascending=False)
-            sorted_related_artists = sorted_related_artists[sorted_related_artists['count'] > 1]
-            all_artists = pd.concat([selected_artists, sorted_related_artists[['ART_ID', 'ART_NAME', 'ART_PICTURE']]], ignore_index=True)
-            return all_artists
-        except DeezerServiceError as dse:
-            logger.warning(f"{dse.__class__.__name__}: {dse.message}")
+        selected_artists = self.selected_artists
+        related_artists = pd.DataFrame([])
+        for art_id in selected_artists['ART_ID']:
+            related = self.__get_related_artists(art_id)
+            related_artists = pd.concat([related_artists,related], ignore_index=True)
+        if related_artists.empty:
+            logger.warning("No related artists found")
             return selected_artists
+        sorted_related_artists = related_artists.groupby(['ART_ID'],as_index=False).value_counts().sort_values(by="count", ascending=False)
+        sorted_related_artists = sorted_related_artists[sorted_related_artists['count'] > 1]
+        all_artists = pd.concat([selected_artists, sorted_related_artists], ignore_index=True)
+        return all_artists
 
+    # @debugging
     def __get_related_artists(self, artist_id: str) -> pd.DataFrame:
         try:
             data = self.session.get_artist_data(artist_id, tab=1)
-            if 'RELATED_ARTISTS' not in data:
-                raise DeezerServiceError(f"Artist ID {artist_id} has no related artists data")
             data = data['RELATED_ARTISTS']['data']
             relative_artists = pd.DataFrame(data)
-            self.__checking_dataframe(relative_artists, ['ART_ID', 'ART_NAME', 'ART_PICTURE'], f"Related artists for artist ID {artist_id}")
             return relative_artists[['ART_ID', 'ART_NAME', 'ART_PICTURE']]
-        except DeezerServiceError as dse:  
-            logger.warning(f"{dse.__class__.__name__}: {dse.message}")
+        except ValidationError as e:  
+            logger.warning(f"{e.__class__.__name__}: {e.message}")
+            logger.warning(f"Failed to retrieve or validate related artists for artist ID {artist_id}")
             return pd.DataFrame([])
     
     @debugging
     def __set_random_tracks_list(self):
-        artist_list = self.selected_artists['ART_ID'].to_numpy()
-        artist_list = np.append(artist_list, '352227652')
+        artist_list = self.selected_artists['ART_ID'].to_list()
+        artist_list.append('352227652')
         logger.debug(f"Selected artists IDs: {artist_list}")
         tracks_list = pd.DataFrame([])
         for a in artist_list:
             artist_tracks = self.__get_tracks_by_artist(a)
             if not artist_tracks.empty:
-                tracks_list = pd.concat([tracks_list,artist_tracks.sample(n=self.number_tracks_by_artist)], ignore_index=True)
+                n_tracks = min(len(artist_tracks), self.number_tracks_by_artist)
+                tracks_list = pd.concat([tracks_list,artist_tracks.sample(n=n_tracks)], ignore_index=True)
         if tracks_list.empty:
             raise DeezerServiceError("No tracks found for the selected artists")
         return tracks_list
 
+    # @debugging
     def __get_tracks_by_artist(self, artist_id: str) -> pd.DataFrame:
         try:
-            data = self.session.get_artist_data(artist_id)
-            if 'ALBUMS' not in data:
-                raise DeezerServiceError(f"Artist ID {artist_id} has no albums data")
+            data = self.session.get_artist_data(artist_id, tab=0)
             albums = pd.DataFrame(data['ALBUMS']['data'])
-            self.__checking_dataframe(albums, ['SONGS'], f"Albums for artist ID {artist_id}")
             albums['SONGS_LIST'] = albums['SONGS'].apply(lambda x: x['data'] if 'data' in x else [])
-            tracks_by_album = albums['SONGS_LIST'].to_numpy()
-            tracks_by_album = sum(tracks_by_album, [])
-            tracks = pd.DataFrame(tracks_by_album)
-            self.__checking_dataframe(tracks, ['SNG_ID','SNG_TITLE','ART_ID'], f"Tracks for artist ID {artist_id}")
-            tracks = tracks[tracks['ART_ID']==artist_id]
-            return tracks[['SNG_ID','SNG_TITLE','ART_ID']]
-        except DeezerServiceError as dse:
-            logger.warning(f"{dse.__class__.__name__}: {dse.message}")
+            tracks = pd.DataFrame(albums['SONGS_LIST'].explode().tolist())
+            tracks['DURATION'] = tracks['DURATION'].astype(int)
+            filtered_tracks = tracks[(tracks['ART_ID']==artist_id)&(tracks['DURATION']>80)]
+            return filtered_tracks[['SNG_ID','SNG_TITLE','ART_ID']]
+        except ValidationError as e:
+            logger.warning(f"{e.__class__.__name__}: {e.message}")
+            logger.warning(f"Failed to retrieve or validate tracks list for artist ID {artist_id}")
             return pd.DataFrame([])
 
     def __save_playlist_on_deezer_profile(self, name: str, public: bool, songs_df: pd.DataFrame):
@@ -111,21 +108,12 @@ class DeezerService():
         pass
 
     def __get_last_playlist_id(self) -> str:
-        data = self.session.get_profile_data(tab='home')
-        user_playlists = data['TAB']['home']['playlists']
-        last_playlist = user_playlists['data'][0]
-        return last_playlist['PLAYLIST_ID']
+        try:
+            data = self.session.get_profile_data(tab='home')
+            user_playlists = data['TAB']['home']['playlists']
+            last_playlist = user_playlists['data'][0]
+            return last_playlist['PLAYLIST_ID']
+        except ValidationError as e:
+            logger.error(f"{e.__class__.__name__}: {e.message}")
+            raise DeezerServiceError("Failed to retrieve or validate user's playlists")
     
-    def __checking_dataframe(self, df: pd.DataFrame, required_columns: list, name: str) -> bool:
-        if df.empty:
-            raise DeezerServiceError(f"{name} data is empty")
-        for col in required_columns:
-            if col not in df.columns:
-                raise DeezerServiceError(f"{name} data is missing required column: {col}")
-        pass
-    
-class DeezerServiceError(Exception):
-    """Base class for exceptions in DeezerService."""
-    def __init__(self, message: str):
-        self.message = message
-    pass
