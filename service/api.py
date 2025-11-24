@@ -5,7 +5,7 @@ from selenium import webdriver
 from utils.configuration import get_config_section, load_configuration, CONFIG_FILE
 import logging
 from utils.logging_manager import debugging
-from utils.schema import deezer_data_validation
+from utils.pydantic_models import deezer_data_validation
 from utils.exceptions import DeezerAPIError, LoginException
 logger = logging.getLogger(__name__)
 
