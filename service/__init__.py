@@ -3,7 +3,7 @@ from service.api import DeezerAPI
 from utils.configuration import get_config_section
 import logging
 from utils.logging_manager import debugging
-from jsonschema import ValidationError
+from pydantic import ValidationError
 from utils.exceptions import DeezerServiceError
 logger = logging.getLogger(__name__)
 
