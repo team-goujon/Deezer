@@ -138,6 +138,7 @@ class DeezerAPI:
         results = self.__get_api("deezer.pageArtist", body)
         return results
 
+    @data_validation
     def get_user_flow(self):
         body = {
             "user_id": self.user_id,

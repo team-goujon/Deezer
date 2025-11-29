@@ -46,7 +46,9 @@ class SongModel(BaseModel):
     SNG_TITLE: str
     ART_ID: str
     DURATION: str
+    ART_NAME: str
 
+# Also used for get_user_flow
 class ListSongModel(BaseModel):
     data: list[SongModel] = Field(..., min_length=1)
 
@@ -64,13 +66,17 @@ deezer_validation_models = {
     ('get_artist_data','0'): GetTracksByArtistModel,
     ('get_artist_data','1'): GetRelatedArtistsModel,
     ('get_profile_data','artists'): GetUserFavoritesArtistsModel,
-    ('get_profile_data','home'): GetLastPlaylistIdModel
+    ('get_profile_data','home'): GetLastPlaylistIdModel,
+    ('get_user_flow',''): ListSongModel
 }
 
 def data_validation(func):
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
-        model: BaseModel = deezer_validation_models[func.__name__,str(kwargs['tab'])]
+        tab = ''
+        if 'tab' in kwargs:
+            tab = str(kwargs['tab'])
+        model: BaseModel = deezer_validation_models[func.__name__,tab]
         model.model_validate(result)
         return result
     return wrapper
