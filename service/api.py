@@ -138,6 +138,13 @@ class DeezerAPI:
         results = self.__get_api("deezer.pageArtist", body)
         return results
 
+    def get_user_flow(self):
+        body = {
+            "user_id": self.user_id,
+        }
+        results = self.__get_api("radio.getUserRadio", body)
+        return results
+    
     def get_songs(self, album_id: int):
         body = {
             "alb_id": album_id,

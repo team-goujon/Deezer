@@ -117,3 +117,14 @@ class DeezerService():
             logger.error(f"{e.__class__.__name__}: {e.message}")
             raise DeezerServiceError("Failed to retrieve or validate user's playlists")
     
+    def get_flow_songs(self) -> dict:
+        data = self.session.get_user_flow()
+        flow_df = pd.DataFrame(data['data'])
+        songs_df = flow_df[['SNG_ID', 'SNG_TITLE', 'ART_ID', 'ART_NAME']]
+        return songs_df
+
+    def get_flow_artists(self) -> pd.DataFrame:
+        data = self.session.get_user_flow()
+        flow_df = pd.DataFrame(data['data'])
+        artists_df = flow_df[['ART_ID', 'ART_NAME']].drop_duplicates().reset_index(drop=True)
+        return artists_df
