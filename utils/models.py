@@ -67,7 +67,7 @@ deezer_validation_models = {
     ('get_profile_data','home'): GetLastPlaylistIdModel
 }
 
-def deezer_data_validation(func):
+def data_validation(func):
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
         model: BaseModel = deezer_validation_models[func.__name__,str(kwargs['tab'])]
