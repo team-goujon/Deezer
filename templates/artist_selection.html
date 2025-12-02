@@ -11,7 +11,11 @@
                   <td>{{ values['ART_NAME'] }}</td>
                   <td>
                     <div class="form-check">
-                      <input class="form-check-input" type="checkbox" value="{{ values['ART_ID'] }}" name="artist_index">
+                          {% if mode=="Manual" %}
+                              <input class="form-check-input" type="checkbox" value="{{ values['ART_ID'] }}" name="artist_index">
+                          {% else %}
+                              <input class="form-check-input" type="checkbox" value="{{ values['ART_ID'] }}" name="artist_index" checked>
+                          {% endif %}
                     </div>
                   </td>
               </tr>

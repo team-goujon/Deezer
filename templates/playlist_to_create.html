@@ -4,7 +4,16 @@
   <form action="#" method="post" class="bg-secondary m-2 p-3 rounded">
     <div class="align-items-center mb-3">
       <h2>Playlist content</h2>
-      {{ track_list|safe }}
+      <table class="table">
+        <tbody>
+          {% for values in tracks %}
+              <tr>
+                  <td>{{ values['SNG_TITLE'] }}</td>
+                  <td>{{ values['ART_NAME'] }}</td>
+              </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
     <div class="mb-3">
       <button type="submit" class="btn btn-primary">Save on Deezer</button>
