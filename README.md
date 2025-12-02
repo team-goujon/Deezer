@@ -9,7 +9,7 @@ cp config.ini.sample config.ini
 ## Usage
 ```
 pip install -r requirements.txt
-python generate_playlist.py
+python webapp.py
 ```
 
 ## Plan
