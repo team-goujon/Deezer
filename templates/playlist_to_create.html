@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Deezer Service by Goujon{% endblock %}
+{% block content %}
+  <form action="#" method="post" class="bg-secondary m-2 p-3 rounded">
+    <div class="align-items-center mb-3">
+      <h2>Playlist content</h2>
+      {{ track_list|safe }}
+    </div>
+    <div class="mb-3">
+      <button type="submit" class="btn btn-primary">Save on Deezer</button>
+    </div>
+  </form>
+{% endblock %}
+   
