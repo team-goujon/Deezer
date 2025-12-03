@@ -64,7 +64,7 @@ class DeezerService():
             return selected_artists
         sorted_related_artists = related_artists.groupby(['ART_ID'],as_index=False).value_counts().sort_values(by="count", ascending=False)
         sorted_related_artists = sorted_related_artists[sorted_related_artists['count'] > 1]
-        all_artists = pd.concat([selected_artists, sorted_related_artists], ignore_index=True)
+        all_artists = pd.concat([selected_artists, sorted_related_artists], ignore_index=True).drop_duplicates().reset_index(drop=True)
         return all_artists
 
     # @debugging

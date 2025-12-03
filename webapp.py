@@ -27,7 +27,7 @@ def menu():
         if service.mode == 'Favorites':
             service.create_playlist()
             return redirect(url_for('playlist_to_create'))
-        else:
+        if service.mode == 'Flow' or service.mode == 'Manual':
             service.artist_to_display = service.set_artist_selection()
             return redirect(url_for('artist_selection'))
     return render_template('menu.html')
