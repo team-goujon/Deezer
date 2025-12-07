@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}playlist_parameters{% endblock %}
+{% block content %}
+  <form action="#" method="post" class="bg-secondary m-3 p-3 rounded">
+    <div class="container text-end align-items-center mb-3">
+    
+      <div class="row align-items-center mb-3">
+        <div class="col">
+          <div class="p">Playlist name:</div>
+        </div>
+        <div class="col">
+            <input type="text" name="playlist_name" class="form-control" aria-describedby="playlistNameHelpInline" required>
+        </div>
+      </div>
+      
+      <div class="row align-items-center mb-3">
+        <div class="col">
+          <div class="p">Public playlist ?</div>
+        </div>
+        <div class="col">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" name="public_playlist">
+          </div>
+        </div>
+      </div>
+
+      <div class="row align-items-center mb-3">
+        <div class="col">
+          <div class="p">Artists selection:</div>
+        </div>
+        <div class="col">
+          <select class="form-select" aria-label="Default select example" name="mode_selection" id="mode">
+            <option selected>Choose one:</option>
+            <option value="Favorites">From favorites</option>
+            <option value="Flow">From Deezer flow</option>
+            <option value="Manual">Manual</option>
+          </select> 
+        </div>
+      </div>
+
+      <div class="row align-items-center mb-3 collapse" id="artists_number_row">
+        <div class="col">
+          <div class="p">Number of artists:</div>
+        </div>
+        <div class="col">
+          <input type="text" name="artists_number" class="form-control" aria-describedby="artistsNumberHelpInline">
+        </div>
+      </div>
+
+      <div class="row align-items-center mb-3 collapse" id="songs_number_row">
+        <div class="col">
+          <div class="p">Number of songs per artist:</div>
+        </div>
+        <div class="col">
+          <input type="text" name="songs_number" class="form-control" aria-describedby="songsNumberHelpInline">
+        </div>
+      </div>
+
+      <div class="row align-items-center mb-3 collapse" id="relative_row">
+        <div class="col">
+          <div class="p">Include similar artists?</div>
+        </div>
+        <div class="col">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" name="related_artists" id="relative_switch">
+          </div>
+        </div>
+      </div>
+
+      <div class="row align-items-center m-3">
+        <div class="col text-center">
+          <button type="submit" class="btn btn-primary">Generate</button>
+        </div>
+      </div>
+      
+    </div>
+  </form>
+{% endblock %}
+{% block scripts %}
+<script>
+  $('#mode').change(function() {
+      opt = $(this).val();
+      if (opt=="Favorites") {
+          $('#artists_number_row').removeClass('collapse', true);
+          $('#songs_number_row').removeClass('collapse', true);
+          $('#relative_row').removeClass('collapse', true);
+      }else if (opt == "Flow") {
+          $('#artists_number_row').addClass('collapse', true);
+          $('#songs_number_row').removeClass('collapse', true);
+          $('#relative_row').addClass('collapse', true);
+      }else if (opt == "Manual") {
+          $('#artists_number_row').addClass('collapse', true);
+          $('#songs_number_row').removeClass('collapse', true);
+          $('#relative_row').removeClass('collapse', true);
+      }
+  });
+</script>
+{% endblock %}
