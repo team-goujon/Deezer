@@ -9,9 +9,9 @@ logger = logging.getLogger(__name__)
 
 class DeezerService():
     
-    def __init__(self):
+    def __init__(self, request):
         self.config = get_config_section("service")
-        self.session = DeezerAPI()
+        self.session = DeezerAPI(request)
         self.number_random_artists = int(self.config.get("random_artists_number"))
         self.number_tracks_by_artist = int(self.config.get("tracks_by_artist_number"))
         self.name = ""

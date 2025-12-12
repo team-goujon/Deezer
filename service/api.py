@@ -1,8 +1,4 @@
 import requests
-import time
-from configparser import NoSectionError, NoOptionError
-from selenium import webdriver
-from utils.configuration import get_config_section, load_configuration, CONFIG_FILE
 import logging
 from utils.logging_manager import debugging
 from utils.models import data_validation
@@ -11,71 +7,17 @@ logger = logging.getLogger(__name__)
 
 class DeezerAPI:
     API_URL = "https://www.deezer.com/ajax/gw-light.php"
-    LOGIN_URL = "https://account.deezer.com/fr/login/"
-
-    def __init__(self):
-        self.config = get_config_section("cookies")
+    
+    def __init__(self, request):
         self.session = requests.Session()
         self.api_token = ""
-        self.set_session_params()
+        self.set_session_params(request)
         self.get_user_data()
         pass
 
-    def get_cookie_box(self):
-        cookie_box = {}
-        try:
-            for name in ['sid', 'arl']:
-                cookie_box[name] = self.config[name]
-            if not(cookie_box['sid'] and cookie_box['arl']):
-                cookie_box = self.save_cookies()
-        except NoSectionError as nse:
-            logger.debug(f'NoSectionError {nse}')
-            cookie_box = self.save_cookies()
-        except NoOptionError as noe:
-            logger.debug(f'NoOptionError {noe}')
-            cookie_box = self.save_cookies()
-        except Exception as e:
-            logger.error(f"Error reading {CONFIG_FILE}: {e}")
-        
-        return cookie_box
-
-    def save_cookies(self):
-        cookie_box = {}
-        print("Opening a browser for interactive Deezer login (please sign in in that window)...")
-        driver = webdriver.Chrome()
-        try:
-            driver.get(self.LOGIN_URL)
-            deadline = time.time() + 120
-            poll_interval = 2
-            while time.time() < deadline and not ("arl" in cookie_box and "sid" in cookie_box):
-                time.sleep(poll_interval)
-                for cookie in driver.get_cookies():
-                    name = cookie.get("name")
-                    if name in ("arl", "sid") and name not in cookie_box:
-                        cookie_box[name] = cookie.get("value")
-            # Save cookie_box in the config file under [cookies]
-            config = load_configuration()
-            try:
-                if not config.has_section("cookies"):
-                    config.add_section("cookies")
-                for name in ("sid", "arl"):
-                    if name in cookie_box:
-                        config.set("cookies", name, cookie_box[name])
-                with open(CONFIG_FILE, "w") as f:
-                    config.write(f)
-            except Exception as e:
-                logger.error(f"Couldn't save cookie file {CONFIG_FILE}: {e}")
-        finally:
-            try:
-                driver.quit()
-            except Exception:
-                pass
-        return cookie_box
-
-    def set_session_params(self):
-        cookie_box = self.get_cookie_box()
+    def set_session_params(self, request):
         self.session.cookies.update({
-            name: cookie_box[name] for name in ("arl", "sid")
+            name: request.cookies.get(name) for name in ("arl", "sid")
         })
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (compatible)',

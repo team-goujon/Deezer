@@ -1,5 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, make_response
 from service import DeezerService
+from service.auth import isLogged, login, require_login
 import pandas as pd
 import logging
 logger = logging.getLogger(__name__)
@@ -9,15 +10,21 @@ app = Flask(__name__)
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
-        global service
-        service = DeezerService()
+        response = make_response(redirect(url_for('menu')))
+        cookies = login()
+        for name, value in cookies.items():
+            response.set_cookie(name, value)
+        return response
+    if isLogged(request):
         return redirect(url_for('menu'))
     return render_template('home.html')
 
-
 @app.route('/menu', methods=['GET', 'POST'])
+@require_login
 def menu():
     if request.method == 'POST':
+        global service
+        service = DeezerService(request)
         service.name = request.form.get('playlist_name', type=str)
         service.public = request.form.get('public_playlist') == 'on'
         service.number_random_artists = request.form.get('artists_number', type=int)
@@ -33,6 +40,7 @@ def menu():
     return render_template('menu.html')
 
 @app.route('/playlist_to_create', methods=['GET', 'POST'])
+@require_login
 def playlist_to_create():
     track_list = service.track_list
     if request.method == 'POST':
@@ -42,6 +50,7 @@ def playlist_to_create():
     return render_template('playlist_to_create.html', tracks=track_list_to_render)
 
 @app.route('/artist_selection', methods=['GET', 'POST'])
+@require_login
 def artist_selection():
     artist_to_display = service.artist_to_display
     if request.method == 'POST':
