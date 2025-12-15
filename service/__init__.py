@@ -14,29 +14,26 @@ class DeezerService():
         self.session = DeezerAPI(request)
         self.number_random_artists = int(self.config.get("random_artists_number"))
         self.number_tracks_by_artist = int(self.config.get("tracks_by_artist_number"))
-        self.name = ""
-        self.public = False
-        self.selected_artists = pd.DataFrame([])
-        self.include_relative = False
-        self.mode = ''
-        self.artist_to_display = pd.DataFrame([])
 
-    def create_playlist(self):
+    def create_playlist(self, artists_list: dict) -> pd.DataFrame:
         try:
-            if self.mode == 'Favorites':
-                user_favorites = self.get_user_favorites_artists()
-                self.selected_artists = user_favorites.sample(n=self.number_random_artists)
-            if self.include_relative:
-                self.selected_artists = self.__add_related_artists()
-            self.track_list = self.__set_random_tracks_list()
+            artists_list_df = pd.DataFrame(artists_list)
+            track_list = self.__set_random_tracks_list(artists_list_df)
+            return track_list
         except Exception as e:
             logger.error(f"{e.__class__.__name__}: {e}")
 
-    def set_artist_selection(self) -> pd.DataFrame:
+    def set_artist_selection(self, mode: str, include_relative: bool) -> pd.DataFrame:
         try:
-            if self.mode == 'Flow':
+            if mode == 'Flow':
                 return self.get_flow_artists()
-            return self.get_user_favorites_artists()
+            else:
+                selected_artists = self.get_user_favorites_artists()
+            if mode == 'Favorites':
+                selected_artists = selected_artists.sample(n=self.number_random_artists)
+            if include_relative:
+                selected_artists = self.__add_related_artists(selected_artists)
+            return selected_artists
         except Exception as e:
             logger.error(f"{e.__class__.__name__}: {e}")
 
@@ -53,8 +50,7 @@ class DeezerService():
             raise DeezerServiceError("Failed to retrieve or validate user's favorite artists")
 
     # @debugging
-    def __add_related_artists(self) -> pd.DataFrame:
-        selected_artists = self.selected_artists
+    def __add_related_artists(self, selected_artists) -> pd.DataFrame:
         related_artists = pd.DataFrame([])
         for art_id in selected_artists['ART_ID']:
             related = self.__get_related_artists(art_id)
@@ -80,8 +76,8 @@ class DeezerService():
             return pd.DataFrame([])
     
     @debugging
-    def __set_random_tracks_list(self) -> pd.DataFrame:
-        artist_list = self.selected_artists['ART_ID'].to_list()
+    def __set_random_tracks_list(self, selected_artists) -> pd.DataFrame:
+        artist_list = selected_artists['ART_ID'].to_list()
         artist_list.append('352227652')
         logger.debug(f"Selected artists IDs: {artist_list}")
         tracks_list = pd.DataFrame([])
@@ -109,10 +105,11 @@ class DeezerService():
             logger.warning(f"Failed to retrieve or validate tracks list for artist ID {artist_id}")
             return pd.DataFrame([])
 
-    def save_playlist_on_deezer_profile(self, track_list: pd.DataFrame):
-        self.session.create_playlist(name=self.name, description="", public=self.public)
+    def save_playlist_on_deezer_profile(self, track_list: dict, name: str, public: bool):
+        self.session.create_playlist(name=name, description="", public=public)
         playlist_id = self.__get_last_playlist_id()
-        songs_list_formated = [[s,0] for s in track_list['SNG_ID']]
+        track_list_df = pd.DataFrame(track_list)
+        songs_list_formated = [[s,0] for s in track_list_df['SNG_ID']]
         self.session.add_songs_to_playlist(songs_list_formated, playlist_id)
         pass
 

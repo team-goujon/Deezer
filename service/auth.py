@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 LOGIN_URL = "https://account.deezer.com/fr/login/"
 
-def isLogged(request) -> bool:
+def is_logged(request) -> bool:
     return request.cookies.get('arl') is not None and request.cookies.get('sid') is not None
 
 def login():
@@ -32,7 +32,7 @@ def login():
 
 def require_login(func):
     def wrapper(*args, **kwargs):
-        if not isLogged(request):
+        if not is_logged(request):
             logger.info("User not logged in, redirecting to home")
             return redirect(url_for('home'))
         return func(*args, **kwargs)
