@@ -5,6 +5,7 @@ import logging
 from utils.logging_manager import debugging
 from pydantic import ValidationError
 from utils.exceptions import DeezerServiceError
+from utils.models import GoujonPlaylistModel
 logger = logging.getLogger(__name__)
 
 class DeezerService():
@@ -14,21 +15,19 @@ class DeezerService():
         self.session = DeezerAPI()
         self.number_random_artists = int(self.config.get("random_artists_number"))
         self.number_tracks_by_artist = int(self.config.get("tracks_by_artist_number"))
-        self.name = ""
-        self.public = False
-        self.selected_artists = pd.DataFrame([])
         self.include_relative = False
         self.mode = ''
         self.artist_to_display = pd.DataFrame([])
+        self.playlist_to_create = GoujonPlaylistModel(name="", public=False, selected_artists=pd.DataFrame([]), track_list=pd.DataFrame([]))
 
     def create_playlist(self):
         try:
             if self.mode == 'Favorites':
                 user_favorites = self.get_user_favorites_artists()
-                self.selected_artists = user_favorites.sample(n=self.number_random_artists)
+                self.playlist_to_create.selected_artists = user_favorites.sample(n=self.number_random_artists)
             if self.include_relative:
-                self.selected_artists = self.__add_related_artists()
-            self.track_list = self.__set_random_tracks_list()
+                self.playlist_to_create.selected_artists = self.__add_related_artists()
+            self.playlist_to_create.track_list = self.__set_random_tracks_list()
         except Exception as e:
             logger.error(f"{e.__class__.__name__}: {e}")
 
@@ -54,7 +53,7 @@ class DeezerService():
 
     # @debugging
     def __add_related_artists(self) -> pd.DataFrame:
-        selected_artists = self.selected_artists
+        selected_artists = self.playlist_to_create.selected_artists
         related_artists = pd.DataFrame([])
         for art_id in selected_artists['ART_ID']:
             related = self.__get_related_artists(art_id)
@@ -81,7 +80,7 @@ class DeezerService():
     
     @debugging
     def __set_random_tracks_list(self) -> pd.DataFrame:
-        artist_list = self.selected_artists['ART_ID'].to_list()
+        artist_list = self.playlist_to_create.selected_artists['ART_ID'].to_list()
         artist_list.append('352227652')
         logger.debug(f"Selected artists IDs: {artist_list}")
         tracks_list = pd.DataFrame([])
@@ -110,7 +109,7 @@ class DeezerService():
             return pd.DataFrame([])
 
     def save_playlist_on_deezer_profile(self, track_list: pd.DataFrame):
-        self.session.create_playlist(name=self.name, description="", public=self.public)
+        self.session.create_playlist(name=self.playlist_to_create.name, description="", public=self.playlist_to_create.public)
         playlist_id = self.__get_last_playlist_id()
         songs_list_formated = [[s,0] for s in track_list['SNG_ID']]
         self.session.add_songs_to_playlist(songs_list_formated, playlist_id)

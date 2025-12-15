@@ -18,8 +18,8 @@ def home():
 @app.route('/menu', methods=['GET', 'POST'])
 def menu():
     if request.method == 'POST':
-        service.name = request.form.get('playlist_name', type=str)
-        service.public = request.form.get('public_playlist') == 'on'
+        service.playlist_to_create.name = request.form.get('playlist_name', type=str)
+        service.playlist_to_create.public = request.form.get('public_playlist') == 'on'
         service.number_random_artists = request.form.get('artists_number', type=int)
         service.number_tracks_by_artist = request.form.get('songs_number', type=int)
         service.mode = request.form['mode_selection']
@@ -34,11 +34,11 @@ def menu():
 
 @app.route('/playlist_to_create', methods=['GET', 'POST'])
 def playlist_to_create():
-    track_list = service.track_list
+    track_list = service.playlist_to_create.track_list
     if request.method == 'POST':
         service.save_playlist_on_deezer_profile(track_list)
         return redirect(url_for('home'))
-    track_list_to_render = service.track_list[['SNG_TITLE', 'ART_NAME']].to_dict(orient='records')
+    track_list_to_render = service.playlist_to_create.track_list[['SNG_TITLE', 'ART_NAME']].to_dict(orient='records')
     return render_template('playlist_to_create.html', tracks=track_list_to_render)
 
 @app.route('/artist_selection', methods=['GET', 'POST'])
@@ -46,7 +46,7 @@ def artist_selection():
     artist_to_display = service.artist_to_display
     if request.method == 'POST':
         selected_ids = request.form.getlist('artist_index')
-        service.selected_artists = artist_to_display[artist_to_display['ART_ID'].isin(selected_ids)]
+        service.playlist_to_create.selected_artists = artist_to_display[artist_to_display['ART_ID'].isin(selected_ids)]
         service.create_playlist()
         return redirect(url_for('playlist_to_create'))
     artist_to_be_rendered = artist_to_display.to_dict(orient='records')

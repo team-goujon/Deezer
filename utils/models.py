@@ -1,4 +1,13 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
+import pandas as pd
+
+#Model for playlist create by service
+class GoujonPlaylistModel(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    name: str
+    public: bool
+    selected_artists: pd.DataFrame
+    track_list: pd.DataFrame
 
 # Models for artists data (used for favorite and related artists)
 class ArtistModel(BaseModel):
