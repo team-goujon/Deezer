@@ -13,27 +13,24 @@ class DeezerService():
     def __init__(self):
         self.config = get_config_section("service")
         self.session = DeezerAPI()
-        self.number_random_artists = int(self.config.get("random_artists_number"))
-        self.number_tracks_by_artist = int(self.config.get("tracks_by_artist_number"))
-        self.include_relative = False
-        self.mode = ''
-        self.artist_to_display = pd.DataFrame([])
-        self.playlist_to_create = GoujonPlaylistModel(name="", public=False, selected_artists=pd.DataFrame([]), track_list=pd.DataFrame([]))
 
-    def create_playlist(self):
+    def create_playlist(self, data) -> GoujonPlaylistModel:
         try:
-            if self.mode == 'Favorites':
+            playlist_to_create: GoujonPlaylistModel = data['playlist_to_create']
+            if data['mode'] == 'Favorites':
                 user_favorites = self.get_user_favorites_artists()
-                self.playlist_to_create.selected_artists = user_favorites.sample(n=self.number_random_artists)
-            if self.include_relative:
-                self.playlist_to_create.selected_artists = self.__add_related_artists()
-            self.playlist_to_create.track_list = self.__set_random_tracks_list()
+                playlist_to_create.selected_artists = user_favorites.sample(n=data['number_random_artists'])
+            if data['include_relative']:
+                playlist_to_create.selected_artists = self.__add_related_artists(playlist_to_create.selected_artists)
+            playlist_to_create.track_list = self.__set_random_tracks_list(playlist_to_create.selected_artists, data['number_tracks_by_artist'])
+            return playlist_to_create
         except Exception as e:
             logger.error(f"{e.__class__.__name__}: {e}")
 
-    def set_artist_selection(self) -> pd.DataFrame:
+    # @debugging
+    def set_artist_selection(self, mode) -> pd.DataFrame:
         try:
-            if self.mode == 'Flow':
+            if mode == 'Flow':
                 return self.get_flow_artists()
             return self.get_user_favorites_artists()
         except Exception as e:
@@ -52,8 +49,7 @@ class DeezerService():
             raise DeezerServiceError("Failed to retrieve or validate user's favorite artists")
 
     # @debugging
-    def __add_related_artists(self) -> pd.DataFrame:
-        selected_artists = self.playlist_to_create.selected_artists
+    def __add_related_artists(self, selected_artists) -> pd.DataFrame:
         related_artists = pd.DataFrame([])
         for art_id in selected_artists['ART_ID']:
             related = self.__get_related_artists(art_id)
@@ -79,15 +75,15 @@ class DeezerService():
             return pd.DataFrame([])
     
     @debugging
-    def __set_random_tracks_list(self) -> pd.DataFrame:
-        artist_list = self.playlist_to_create.selected_artists['ART_ID'].to_list()
+    def __set_random_tracks_list(self, selected_artists, number_tracks_by_artist) -> pd.DataFrame:
+        artist_list = selected_artists['ART_ID'].to_list()
         artist_list.append('352227652')
         logger.debug(f"Selected artists IDs: {artist_list}")
         tracks_list = pd.DataFrame([])
         for a in artist_list:
             artist_tracks = self.__get_tracks_by_artist(a)
             if not artist_tracks.empty:
-                n_tracks = min(len(artist_tracks), self.number_tracks_by_artist)
+                n_tracks = min(len(artist_tracks), number_tracks_by_artist)
                 tracks_list = pd.concat([tracks_list,artist_tracks.sample(n=n_tracks)], ignore_index=True)
         if tracks_list.empty:
             raise DeezerServiceError("No tracks found for the selected artists")
@@ -108,10 +104,10 @@ class DeezerService():
             logger.warning(f"Failed to retrieve or validate tracks list for artist ID {artist_id}")
             return pd.DataFrame([])
 
-    def save_playlist_on_deezer_profile(self, track_list: pd.DataFrame):
-        self.session.create_playlist(name=self.playlist_to_create.name, description="", public=self.playlist_to_create.public)
+    def save_playlist_on_deezer_profile(self, playlist_to_create: GoujonPlaylistModel):
+        self.session.create_playlist(name=playlist_to_create.name, description="", public=playlist_to_create.public)
         playlist_id = self.__get_last_playlist_id()
-        songs_list_formated = [[s,0] for s in track_list['SNG_ID']]
+        songs_list_formated = [[s,0] for s in playlist_to_create.track_list['SNG_ID']]
         self.session.add_songs_to_playlist(songs_list_formated, playlist_id)
         pass
 
