@@ -7,9 +7,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.secret_key = '6793792e96ccff55287960d6725b998562b93f7521caa5721c5d8f45454e63a6'
+
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_FILE_THRESHOLD'] = 3
+app.config.from_prefixed_env()
+app.config["SECRET_KEY"]  
 Session(app)
 
 @app.route('/', methods=['GET', 'POST'])
