@@ -3,49 +3,60 @@ import logging
 from utils.logging_manager import debugging
 from utils.models import data_validation
 from utils.exceptions import DeezerAPIError, LoginException
+from flask import g
+from functools import wraps
 logger = logging.getLogger(__name__)
+
+def with_auth(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(
+            *args,
+            auth=g.auth,
+            **kwargs
+        )
+    wrapper.__name__ = func.__name__
+    return wrapper
 
 class DeezerAPI:
     API_URL = "https://www.deezer.com/ajax/gw-light.php"
     
-    def __init__(self, request):
-        self.session = requests.Session()
-        self.api_token = ""
-        self.set_session_params(request)
-        self.get_user_data()
-        pass
-
-    def set_session_params(self, request):
-        self.session.cookies.update({
-            name: request.cookies.get(name) for name in ("arl", "sid")
-        })
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (compatible)',
-            'Referer': 'https://www.deezer.com/',
-            'Origin': 'https://www.deezer.com',
-            'Content-Type': 'application/json'
-        })
+    def __init__(self):
         pass
     
-    def get_user_data(self):
+    def get_user_data(self) -> dict:
         results = self.__get_api("deezer.getUserData")
-        self.api_token = results['checkForm']
-        user_info = results["USER"]
-        self.user_id = user_info["USER_ID"]
-        if self.user_id == 0:
+        api_token = results['checkForm']
+        user_id = results["USER"]["USER_ID"]
+        user_data = {
+            "user_id": user_id,
+            "api_token": api_token
+        }
+        if user_id == 0:
             raise LoginException("User is not logged in. Please check your cookies.")
-        pass
+        return user_data
 
-    def __get_api(self, method: str, body: dict = None) -> dict:
+    @with_auth
+    def __get_api(self, method: str, body: dict = None, auth: dict = None) -> dict:
         try :
+            req = requests.Session()
+            req.cookies.update({
+                name: auth.get(name) for name in ("arl", "sid")
+            })
+            req.headers.update({
+                'User-Agent': 'Mozilla/5.0 (compatible)',
+                'Referer': 'https://www.deezer.com/',
+                'Origin': 'https://www.deezer.com',
+                'Content-Type': 'application/json'
+            })
             logger.info(f"Calling API method: {method} with body: {body}")
             payload = {
                 "api_version": "1.0",
-                "api_token": self.api_token,
+                "api_token": auth.get("api_token", ""),
                 "input": "3",
                 "method": method,
             }
-            resp = self.session.post(self.API_URL, params=payload, json=body)
+            resp = req.post(self.API_URL, params=payload, json=body)
             resp.raise_for_status()
             logger.debug(f"Response status code: {resp.status_code}")
             if resp.text != '':
@@ -60,10 +71,11 @@ class DeezerAPI:
             logger.debug(e)
             return None
 
+    @with_auth
     @data_validation
-    def get_profile_data(self, tab: str, nb: int = 100) -> dict:
+    def get_profile_data(self, auth: dict, tab: str, nb: int = 100) -> dict:
         body = {
-            'user_id': self.user_id,
+            'user_id': auth.get("user_id"),
             'tab': tab,
             'nb': nb
         }
@@ -80,12 +92,14 @@ class DeezerAPI:
         results = self.__get_api("deezer.pageArtist", body)
         return results
 
+    @with_auth
     @data_validation
-    def get_user_flow(self):
+    def get_user_flow(self, auth: dict):
         body = {
-            "user_id": self.user_id,
+            "user_id": auth.get("user_id"),
         }
         results = self.__get_api("radio.getUserRadio", body)
+        logger.debug(f"User flow data retrieved: {results}")
         return results
     
     def get_songs(self, album_id: int):
@@ -97,7 +111,6 @@ class DeezerAPI:
         results = self.__get_api("song.getListByAlbum", body)
         return results
 
-    @debugging
     def create_playlist(self, name: str, description: str, public: bool):
         body = {
             "title": name,

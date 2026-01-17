@@ -1,15 +1,17 @@
 from selenium import webdriver
-from flask import request, redirect, url_for
+from flask import g, session, redirect, url_for
+from functools import wraps
+from service.api import DeezerAPI
 import time
 import logging
 logger = logging.getLogger(__name__)
 
 LOGIN_URL = "https://account.deezer.com/fr/login/"
 
-def is_logged(request) -> bool:
-    return request.cookies.get('arl') is not None and request.cookies.get('sid') is not None
+def is_logged(session) -> bool:
+    return session.get("auth") is not None
 
-def login():
+def _authenticate_on_website():
     cookie_box = {}
     logger.info("Opening a browser for interactive Deezer login")
     driver = webdriver.Chrome()
@@ -30,11 +32,27 @@ def login():
             pass
     return cookie_box
 
-def require_login(func):
+def _authenticate_on_api():
+    user_data = {}
+    try:
+        user_data = DeezerAPI().get_user_data()
+    except Exception as e:
+        logger.error(f"Authentication failed: {e}")
+    return user_data
+
+def login():
+    cookie_box = _authenticate_on_website()
+    g.auth = cookie_box
+    user_data = _authenticate_on_api()
+    return {**cookie_box, **user_data}
+
+def require_auth(func):
+    @wraps(func)
     def wrapper(*args, **kwargs):
-        if not is_logged(request):
+        if not is_logged(session):
             logger.info("User not logged in, redirecting to home")
             return redirect(url_for('home'))
+        g.auth = session.get("auth")
         return func(*args, **kwargs)
     wrapper.__name__ = func.__name__
     return wrapper
