@@ -13,6 +13,7 @@ class DeezerService:
         self.config = get_config_section("service")
         self.number_random_artists = int(self.config.get("random_artists_number"))
         self.number_tracks_by_artist = int(self.config.get("tracks_by_artist_number"))
+        self.api = DeezerAPI()
 
     def create_playlist(self, artists_list: dict) -> pd.DataFrame:
         try:
@@ -38,7 +39,7 @@ class DeezerService:
 
     def get_user_favorites_artists(self) -> pd.DataFrame:
         try:
-            data = DeezerAPI().get_profile_data(tab='artists')
+            data = self.api.get_profile_data(tab='artists')
             data = data['TAB']['artists']['data']
             favorite_artists = pd.DataFrame(data)
             favorite_artists.sort_values(by='ART_NAME',inplace=True)
@@ -65,7 +66,7 @@ class DeezerService:
     # @debugging
     def __get_related_artists(self, artist_id: str) -> pd.DataFrame:
         try:
-            data = DeezerAPI().get_artist_data(artist_id, tab=1)
+            data = self.api.get_artist_data(artist_id, tab=1)
             data = data['RELATED_ARTISTS']['data']
             relative_artists = pd.DataFrame(data)
             return relative_artists[['ART_ID', 'ART_NAME', 'ART_PICTURE']]
@@ -92,7 +93,7 @@ class DeezerService:
     # @debugging
     def __get_tracks_by_artist(self, artist_id: str) -> pd.DataFrame:
         try:
-            data = DeezerAPI().get_artist_data(artist_id, tab=0)
+            data = self.api.get_artist_data(artist_id, tab=0)
             albums = pd.DataFrame(data['ALBUMS']['data'])
             albums['SONGS_LIST'] = albums['SONGS'].apply(lambda x: x['data'] if 'data' in x else [])
             tracks = pd.DataFrame(albums['SONGS_LIST'].explode().tolist())
@@ -105,16 +106,16 @@ class DeezerService:
             return pd.DataFrame([])
 
     def save_playlist_on_deezer_profile(self, track_list: dict, name: str, public: bool):
-        DeezerAPI().create_playlist(name=name, description="", public=public)
+        self.api.create_playlist(name=name, description="", public=public)
         playlist_id = self.__get_last_playlist_id()
         track_list_df = pd.DataFrame(track_list)
         songs_list_formated = [[s,0] for s in track_list_df['SNG_ID']]
-        DeezerAPI().add_songs_to_playlist(songs_list_formated, playlist_id)
+        self.api.add_songs_to_playlist(songs_list_formated, playlist_id)
         pass
 
     def __get_last_playlist_id(self) -> str:
         try:
-            data = DeezerAPI().get_profile_data(tab='home')
+            data = self.api.get_profile_data(tab='home')
             user_playlists = data['TAB']['home']['playlists']
             last_playlist = user_playlists['data'][0]
             return last_playlist['PLAYLIST_ID']
@@ -123,13 +124,13 @@ class DeezerService:
             raise DeezerServiceError("Failed to retrieve or validate user's playlists")
     
     def get_flow_songs(self) -> dict:
-        data = DeezerAPI().get_user_flow()
+        data = self.api.get_user_flow()
         flow_df = pd.DataFrame(data['data'])
         songs_df = flow_df[['SNG_ID', 'SNG_TITLE', 'ART_ID', 'ART_NAME']]
         return songs_df
 
     def get_flow_artists(self) -> pd.DataFrame:
-        data = DeezerAPI().get_user_flow()
+        data = self.api.get_user_flow()
         flow_df = pd.DataFrame(data['data'])
         artists_df = flow_df[['ART_ID', 'ART_NAME']].drop_duplicates().reset_index(drop=True)
         return artists_df

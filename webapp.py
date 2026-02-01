@@ -13,6 +13,7 @@ SESSION_SERIALIZATION_FORMAT = 'json'
 SESSION_CACHELIB = FileSystemCache(threshold=500, cache_dir="./sessions")
 app.config.from_object(__name__)
 Session(app)
+service = DeezerService()
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
@@ -35,9 +36,9 @@ def menu():
         session['form_data'] = request.form.to_dict()
         selection_mode = session['form_data']['mode_selection']
         include_relative = session['form_data'].get('related_artists', 'off') == 'on'
-        session['artists_list'] = DeezerService().set_artist_selection(mode=selection_mode, include_relative=include_relative).to_dict(orient='records')
+        session['artists_list'] = service.set_artist_selection(mode=selection_mode, include_relative=include_relative).to_dict(orient='records')
         if selection_mode == 'Favorites':
-            session['track_list'] = DeezerService().create_playlist(session['artists_list']).to_dict(orient='records')
+            session['track_list'] = service.create_playlist(session['artists_list']).to_dict(orient='records')
             return redirect(url_for('playlist_to_create'))
         if selection_mode in ['Flow', 'Manual']:
             return redirect(url_for('artist_selection'))
@@ -50,7 +51,7 @@ def playlist_to_create():
     if request.method == 'POST':
         playlist_name = session['form_data'].get('playlist_name')
         is_playlist_public = session['form_data'].get('public_playlist') == 'on'
-        DeezerService().save_playlist_on_deezer_profile(track_list, playlist_name, is_playlist_public)
+        service.save_playlist_on_deezer_profile(track_list, playlist_name, is_playlist_public)
         session.clear()
         return redirect(url_for('home'))
     return render_template('playlist_to_create.html', tracks=track_list)
@@ -63,7 +64,7 @@ def artist_selection():
     if request.method == 'POST':
         selected_ids = request.form.getlist('artist_index')
         selected_artists = [item for item in artist_to_display if item['ART_ID'] in selected_ids]
-        session['track_list'] = DeezerService().create_playlist(selected_artists).to_dict(orient='records')
+        session['track_list'] = service.create_playlist(selected_artists).to_dict(orient='records')
         return redirect(url_for('playlist_to_create'))
     return render_template('artist_selection.html', artists=artist_to_display, mode=session['form_data']['mode_selection'])
 
