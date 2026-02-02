@@ -23,6 +23,7 @@ class DeezerService:
         except Exception as e:
             logger.error(f"{e.__class__.__name__}: {e}")
 
+    @debugging
     def set_artist_selection(self, mode: str, include_relative: bool) -> pd.DataFrame:
         try:
             if mode == 'Flow':
@@ -36,6 +37,7 @@ class DeezerService:
             return selected_artists
         except Exception as e:
             logger.error(f"{e.__class__.__name__}: {e}")
+            raise DeezerServiceError(f"{e.message}")
 
     def get_user_favorites_artists(self) -> pd.DataFrame:
         try:
@@ -46,7 +48,7 @@ class DeezerService:
             favorite_artists.reset_index(drop=True,inplace=True)
             return favorite_artists[['ART_ID', 'ART_NAME', 'ART_PICTURE']]
         except ValidationError as e:
-            logger.error(f"{e.__class__.__name__}: {e.message}")
+            logger.error(f"{e.__class__.__name__}: {e.title} - {e.error_count()} error(s)")
             raise DeezerServiceError("Failed to retrieve or validate user's favorite artists")
 
     # @debugging
@@ -71,7 +73,7 @@ class DeezerService:
             relative_artists = pd.DataFrame(data)
             return relative_artists[['ART_ID', 'ART_NAME', 'ART_PICTURE']]
         except ValidationError as e:  
-            logger.warning(f"{e.__class__.__name__}: {e.message}")
+            logger.warning(f"{e.__class__.__name__}: {e.title} - {e.error_count()} error(s)")
             logger.warning(f"Failed to retrieve or validate related artists for artist ID {artist_id}")
             return pd.DataFrame([])
     
@@ -101,7 +103,7 @@ class DeezerService:
             filtered_tracks = tracks[(tracks['ART_ID']==artist_id)&(tracks['DURATION']>80)]
             return filtered_tracks[['SNG_ID','SNG_TITLE','ART_ID','ART_NAME']]
         except ValidationError as e:
-            logger.warning(f"{e.__class__.__name__}: {e.message}")
+            logger.warning(f"{e.__class__.__name__}: {e.title} - {e.error_count()} error(s)")
             logger.warning(f"Failed to retrieve or validate tracks list for artist ID {artist_id}")
             return pd.DataFrame([])
 
@@ -120,7 +122,7 @@ class DeezerService:
             last_playlist = user_playlists['data'][0]
             return last_playlist['PLAYLIST_ID']
         except ValidationError as e:
-            logger.error(f"{e.__class__.__name__}: {e.message}")
+            logger.error(f"{e.__class__.__name__}: {e.title} - {e.error_count()} error(s)")
             raise DeezerServiceError("Failed to retrieve or validate user's playlists")
     
     def get_flow_songs(self) -> dict:
