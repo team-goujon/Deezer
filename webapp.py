@@ -67,5 +67,12 @@ def artist_selection():
         return redirect(url_for('playlist_to_create'))
     return render_template('artist_selection.html', artists=artist_to_display, mode=session['form_data']['mode_selection'])
 
+@app.route('/cancel', methods=['GET'])
+def cancel():
+    session.pop('form_data', None)
+    session.pop('artists_list', None)
+    session.pop('track_list', None)
+    return redirect(url_for('menu'))
+
 if __name__ == '__main__':
     app.run(debug=True)
