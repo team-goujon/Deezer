@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, make_respo
 from flask_session import Session
 from cachelib.file import FileSystemCache
 from service import DeezerService
-from service.auth import is_logged, login, require_auth
+from service.auth import is_auth, authenticate, require_auth
 import pandas as pd
 import logging
 logger = logging.getLogger(__name__)
@@ -15,21 +15,21 @@ app.config.from_object(__name__)
 Session(app)
 service = DeezerService()
 
-@app.route('/', methods=['GET', 'POST'])
-def home():
+@app.route('/login', methods=['GET', 'POST'])
+def login():
     if request.method == 'POST':
-        session['auth'] = login()
+        session['auth'] = authenticate()
         return redirect(url_for('menu'))
-    if is_logged(session):
+    if is_auth(session):
         return redirect(url_for('menu'))
-    return render_template('home.html')
+    return render_template('login.html')
 
 @app.route('/logout', methods=['GET'])
 def logout():
     session.clear()
-    return redirect(url_for('home'))
+    return redirect(url_for('login'))
 
-@app.route('/menu', methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'])
 @require_auth
 def menu():
     if request.method == 'POST':
@@ -52,8 +52,7 @@ def playlist_to_create():
         playlist_name = session['form_data'].get('playlist_name')
         is_playlist_public = session['form_data'].get('public_playlist') == 'on'
         service.save_playlist_on_deezer_profile(track_list, playlist_name, is_playlist_public)
-        session.clear()
-        return redirect(url_for('home'))
+        return redirect(url_for('menu'))
     return render_template('playlist_to_create.html', tracks=track_list)
 
 @app.route('/artist_selection', methods=['GET', 'POST'])

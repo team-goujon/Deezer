@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 LOGIN_URL = "https://account.deezer.com/fr/login/"
 
-def is_logged(session) -> bool:
+def is_auth(session) -> bool:
     return session.get("auth") is not None
 
 def _authenticate_on_website():
@@ -40,7 +40,7 @@ def _authenticate_on_api():
         logger.error(f"Authentication failed: {e}")
     return user_data
 
-def login():
+def authenticate():
     cookie_box = _authenticate_on_website()
     g.auth = cookie_box
     user_data = _authenticate_on_api()
@@ -49,9 +49,9 @@ def login():
 def require_auth(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if not is_logged(session):
-            logger.info("User not logged in, redirecting to home")
-            return redirect(url_for('home'))
+        if not is_auth(session):
+            logger.info("User not logged in, redirecting to login page")
+            return redirect(url_for('login'))
         g.auth = session.get("auth")
         return func(*args, **kwargs)
     wrapper.__name__ = func.__name__
