@@ -30,3 +30,4 @@ python webapp.py
 - list the artists used for the playlist, and enbles user to edit it before creation
 - enables user to edit list of songs in the playlist before creation
 - manages artist and song preferences (ban artist and/or songs)
+- load previous playlist created for editing
