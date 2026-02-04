@@ -41,6 +41,7 @@ def menu():
             session['track_list'] = service.create_playlist(session['artists_list']).to_dict(orient='records')
             return redirect(url_for('playlist_to_create'))
         if selection_mode in ['Flow', 'Manual']:
+            session['artists_to_display'] = session['artists_list']
             return redirect(url_for('artist_selection'))
     return render_template('menu.html')
 
@@ -59,7 +60,7 @@ def playlist_to_create():
 @require_auth
 def artist_selection():
     logger.debug(session)
-    artist_to_display = session['artists_list']
+    artist_to_display = session['artists_to_display']
     if request.method == 'POST':
         selected_ids = request.form.getlist('artist_index')
         selected_artists = [item for item in artist_to_display if item['ART_ID'] in selected_ids]
@@ -71,6 +72,7 @@ def artist_selection():
 def cancel():
     session.pop('form_data', None)
     session.pop('artists_list', None)
+    session.pop('artists_to_display', None)
     session.pop('track_list', None)
     return redirect(url_for('menu'))
 
