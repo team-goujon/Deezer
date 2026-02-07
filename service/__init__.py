@@ -14,15 +14,14 @@ class DeezerService():
         self.config = get_config_section("service")
         self.session = DeezerAPI()
 
-    def create_playlist(self, data) -> GoujonPlaylistModel:
+    def create_playlist(self, playlist_to_create: GoujonPlaylistModel, options: dict) -> GoujonPlaylistModel:
         try:
-            playlist_to_create: GoujonPlaylistModel = data['playlist_to_create']
-            if data['mode'] == 'Favorites':
-                user_favorites = self.get_user_favorites_artists()
-                playlist_to_create.selected_artists = user_favorites.sample(n=data['number_random_artists'])
-            if data['include_relative']:
+            if options['mode'] == 'Favorites':
+                user_favorites = self.__get_user_favorites_artists()
+                playlist_to_create.selected_artists = user_favorites.sample(n=options['number_random_artists'])
+            if options['include_relative']:
                 playlist_to_create.selected_artists = self.__add_related_artists(playlist_to_create.selected_artists)
-            playlist_to_create.track_list = self.__set_random_tracks_list(playlist_to_create.selected_artists, data['number_tracks_by_artist'])
+            playlist_to_create.track_list = self.__set_random_tracks_list(playlist_to_create.selected_artists, options['number_tracks_by_artist'])
             return playlist_to_create
         except Exception as e:
             logger.error(f"{e.__class__.__name__}: {e}")
@@ -31,12 +30,12 @@ class DeezerService():
     def set_artist_selection(self, mode) -> pd.DataFrame:
         try:
             if mode == 'Flow':
-                return self.get_flow_artists()
-            return self.get_user_favorites_artists()
+                return self.__get_flow_artists()
+            return self.__get_user_favorites_artists()
         except Exception as e:
             logger.error(f"{e.__class__.__name__}: {e}")
 
-    def get_user_favorites_artists(self) -> pd.DataFrame:
+    def __get_user_favorites_artists(self) -> pd.DataFrame:
         try:
             data = self.session.get_profile_data(tab='artists')
             data = data['TAB']['artists']['data']
@@ -121,13 +120,13 @@ class DeezerService():
             logger.error(f"{e.__class__.__name__}: {e.message}")
             raise DeezerServiceError("Failed to retrieve or validate user's playlists")
     
-    def get_flow_songs(self) -> dict:
+    def __get_flow_songs(self) -> dict:
         data = self.session.get_user_flow()
         flow_df = pd.DataFrame(data['data'])
         songs_df = flow_df[['SNG_ID', 'SNG_TITLE', 'ART_ID', 'ART_NAME']]
         return songs_df
 
-    def get_flow_artists(self) -> pd.DataFrame:
+    def __get_flow_artists(self) -> pd.DataFrame:
         data = self.session.get_user_flow()
         flow_df = pd.DataFrame(data['data'])
         artists_df = flow_df[['ART_ID', 'ART_NAME']].drop_duplicates().reset_index(drop=True)
