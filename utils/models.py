@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field, ConfigDict
 import pandas as pd
+import logging
+logger = logging.getLogger(__name__)
 
 #Model for playlist create by service
 class GoujonPlaylistModel(BaseModel):
@@ -81,6 +83,7 @@ deezer_validation_models = {
 
 def data_validation(func):
     def wrapper(*args, **kwargs):
+        logger.debug(f"Validating data for function {func.__name__} with arguments {args} and keyword arguments {kwargs}")
         result = func(*args, **kwargs)
         tab = ''
         if 'tab' in kwargs:

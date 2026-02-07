@@ -70,10 +70,11 @@ class DeezerAPI:
         except Exception as e:
             logger.debug(e)
             return None
-
+    
     @with_auth
     @data_validation
     def get_profile_data(self, auth: dict, tab: str, nb: int = 100) -> dict:
+        logger.debug(f"Getting profile data for tab: {tab} with nb: {nb}")
         body = {
             'user_id': auth.get("user_id"),
             'tab': tab,
