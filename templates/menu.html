@@ -29,25 +29,27 @@
           <div class="p">Artists selection:</div>
         </div>
         <div class="col">
-          <select class="form-select" aria-label="Default select example" name="mode_selection" id="mode">
-            <option selected>Choose one:</option>
-            <option value="Favorites">From favorites</option>
-            <option value="Flow">From Deezer flow</option>
-            <option value="Manual">Manual</option>
-          </select> 
+          <div class="form-floating">
+            <select class="form-select" aria-label="Default select example" name="mode_selection" id="mode">
+              <option value="Favorites">From favorites</option>
+              <option value="Flow">From Deezer flow</option>
+              <option value="Manual">Manual</option>
+            </select> 
+            <label for="mode">Choose one:</label>
+          </div>
         </div>
       </div>
 
-      <div class="row align-items-center mb-3 collapse" id="artists_number_row">
+      <div class="row align-items-center mb-3" id="artists_number_row">
         <div class="col">
           <div class="p">Number of artists:</div>
         </div>
         <div class="col">
-          <input type="text" name="artists_number" class="form-control" aria-describedby="artistsNumberHelpInline">
+          <input type="text" name="artists_number" class="form-control" placeholder=2 aria-describedby="artistsNumberHelpInline">
         </div>
       </div>
 
-      <div class="row align-items-center mb-3 collapse" id="songs_number_row">
+      <div class="row align-items-center mb-3" id="songs_number_row">
         <div class="col">
           <div class="p">Number of songs per artist:</div>
         </div>
@@ -56,7 +58,7 @@
         </div>
       </div>
 
-      <div class="row align-items-center mb-3 collapse" id="relative_row">
+      <div class="row align-items-center mb-3" id="relative_row">
         <div class="col">
           <div class="p">Include similar artists?</div>
         </div>
@@ -88,16 +90,8 @@
       opt = $(this).val();
       if (opt=="Favorites") {
           $('#artists_number_row').removeClass('collapse', true);
-          $('#songs_number_row').removeClass('collapse', true);
-          $('#relative_row').removeClass('collapse', true);
-      }else if (opt == "Flow") {
+      }else {
           $('#artists_number_row').addClass('collapse', true);
-          $('#songs_number_row').removeClass('collapse', true);
-          $('#relative_row').addClass('collapse', true);
-      }else if (opt == "Manual") {
-          $('#artists_number_row').addClass('collapse', true);
-          $('#songs_number_row').removeClass('collapse', true);
-          $('#relative_row').removeClass('collapse', true);
       }
   });
 </script>

@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, make_respo
 from flask_session import Session
 from cachelib.file import FileSystemCache
 from service import DeezerService
+from utils.models import GoujonPlaylistModel
 from service.auth import is_auth, authenticate, require_auth
 import pandas as pd
 import logging
@@ -33,40 +34,50 @@ def logout():
 @require_auth
 def menu():
     if request.method == 'POST':
-        session['form_data'] = request.form.to_dict()
-        selection_mode = session['form_data']['mode_selection']
-        include_relative = session['form_data'].get('related_artists', 'off') == 'on'
-        session['artists_list'] = service.set_artist_selection(mode=selection_mode, include_relative=include_relative).to_dict(orient='records')
+        playlist_to_create = GoujonPlaylistModel(name="", public=False, selected_artists=pd.DataFrame([]), track_list=pd.DataFrame([]))
+        playlist_to_create.name = request.form.get('playlist_name', type=str)
+        playlist_to_create.public = request.form.get('public_playlist') == 'on'
+        session['playlist_to_create'] = playlist_to_create
+        selection_mode = request.form['mode_selection']
+        include_relative = request.form.get('related_artists') == 'on'
+        playlist_options = {
+            'mode': selection_mode,
+            'include_relative': include_relative,
+            'number_random_artists': request.form.get('artists_number', type=int, default=service.config.get("random_artists_number")),
+            'number_tracks_by_artist': request.form.get('songs_number', type=int, default=service.config.get("tracks_by_artist_number"))
+        }
+        session['playlist_options'] = playlist_options
         if selection_mode == 'Favorites':
-            session['track_list'] = service.create_playlist(session['artists_list']).to_dict(orient='records')
+            session['playlist_to_create'] = service.create_playlist(playlist_to_create, playlist_options)
             return redirect(url_for('playlist_to_create'))
-        if selection_mode in ['Flow', 'Manual']:
-            session['artists_to_display'] = session['artists_list']
+        if selection_mode == 'Flow' or selection_mode == 'Manual':
+            session['artist_to_display'] = service.set_artist_selection(selection_mode)
             return redirect(url_for('artist_selection'))
+        
     return render_template('menu.html')
 
 @app.route('/playlist_to_create', methods=['GET', 'POST'])
 @require_auth
 def playlist_to_create():
-    track_list = session['track_list']
+    playlist_to_create: GoujonPlaylistModel = session['playlist_to_create']
     if request.method == 'POST':
-        playlist_name = session['form_data'].get('playlist_name')
-        is_playlist_public = session['form_data'].get('public_playlist') == 'on'
-        service.save_playlist_on_deezer_profile(track_list, playlist_name, is_playlist_public)
+        service.save_playlist_on_deezer_profile(playlist_to_create)
         return redirect(url_for('menu'))
-    return render_template('playlist_to_create.html', tracks=track_list)
+    track_list_to_render = playlist_to_create.track_list[['SNG_TITLE', 'ART_NAME']].to_dict(orient='records')
+    return render_template('playlist_to_create.html', tracks=track_list_to_render)
 
 @app.route('/artist_selection', methods=['GET', 'POST'])
 @require_auth
 def artist_selection():
-    logger.debug(session)
-    artist_to_display = session['artists_to_display']
+    artist_to_display = session['artist_to_display']
+    playlist_to_create: GoujonPlaylistModel = session['playlist_to_create']
     if request.method == 'POST':
         selected_ids = request.form.getlist('artist_index')
-        selected_artists = [item for item in artist_to_display if item['ART_ID'] in selected_ids]
-        session['track_list'] = service.create_playlist(selected_artists).to_dict(orient='records')
+        playlist_to_create.selected_artists = artist_to_display[artist_to_display['ART_ID'].isin(selected_ids)]
+        session['playlist_to_create'] = service.create_playlist(playlist_to_create, session['playlist_options'])
         return redirect(url_for('playlist_to_create'))
-    return render_template('artist_selection.html', artists=artist_to_display, mode=session['form_data']['mode_selection'])
+    artist_to_be_rendered = artist_to_display.to_dict(orient='records')
+    return render_template('artist_selection.html', artists=artist_to_be_rendered, mode=session['playlist_options']['mode'])
 
 @app.route('/cancel', methods=['GET'])
 def cancel():
