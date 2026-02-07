@@ -36,6 +36,11 @@ config_dict = {
                 'handlers': ['console'],
                 'level': logging.DEBUG,
                 'propagate': False
+        },
+        'selenium': {
+                'handlers': ['console'],
+                'level': logging.INFO,
+                'propagate': False
         }
     }
 }

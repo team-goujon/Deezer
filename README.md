@@ -25,8 +25,11 @@ python webapp.py
 
 ### V2
 - user interface
+- unit tests + e2e tests?
+- use docker locally
 
 ### V3
-- list the artists used for the playlist, and enbles user to edit it before creation
+- list the artists used for the playlist, and enables user to edit it before creation
 - enables user to edit list of songs in the playlist before creation
 - manages artist and song preferences (ban artist and/or songs)
+- load previous playlist created for editing

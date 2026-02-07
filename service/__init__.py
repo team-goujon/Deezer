@@ -8,11 +8,11 @@ from utils.exceptions import DeezerServiceError
 from utils.models import GoujonPlaylistModel
 logger = logging.getLogger(__name__)
 
-class DeezerService():
-    
+class DeezerService:
+
     def __init__(self):
         self.config = get_config_section("service")
-        self.session = DeezerAPI()
+        self.api = DeezerAPI()
 
     def create_playlist(self, playlist_to_create: GoujonPlaylistModel, options: dict) -> GoujonPlaylistModel:
         try:
@@ -34,17 +34,18 @@ class DeezerService():
             return self.__get_user_favorites_artists()
         except Exception as e:
             logger.error(f"{e.__class__.__name__}: {e}")
+            raise DeezerServiceError(f"{e.message}")
 
     def __get_user_favorites_artists(self) -> pd.DataFrame:
         try:
-            data = self.session.get_profile_data(tab='artists')
+            data = self.api.get_profile_data(tab='artists')
             data = data['TAB']['artists']['data']
             favorite_artists = pd.DataFrame(data)
             favorite_artists.sort_values(by='ART_NAME',inplace=True)
             favorite_artists.reset_index(drop=True,inplace=True)
             return favorite_artists[['ART_ID', 'ART_NAME', 'ART_PICTURE']]
         except ValidationError as e:
-            logger.error(f"{e.__class__.__name__}: {e.message}")
+            logger.error(f"{e.__class__.__name__}: {e.title} - {e.error_count()} error(s)")
             raise DeezerServiceError("Failed to retrieve or validate user's favorite artists")
 
     # @debugging
@@ -64,12 +65,12 @@ class DeezerService():
     # @debugging
     def __get_related_artists(self, artist_id: str) -> pd.DataFrame:
         try:
-            data = self.session.get_artist_data(artist_id, tab=1)
+            data = self.api.get_artist_data(artist_id, tab=1)
             data = data['RELATED_ARTISTS']['data']
             relative_artists = pd.DataFrame(data)
             return relative_artists[['ART_ID', 'ART_NAME', 'ART_PICTURE']]
         except ValidationError as e:  
-            logger.warning(f"{e.__class__.__name__}: {e.message}")
+            logger.warning(f"{e.__class__.__name__}: {e.title} - {e.error_count()} error(s)")
             logger.warning(f"Failed to retrieve or validate related artists for artist ID {artist_id}")
             return pd.DataFrame([])
     
@@ -91,7 +92,7 @@ class DeezerService():
     # @debugging
     def __get_tracks_by_artist(self, artist_id: str) -> pd.DataFrame:
         try:
-            data = self.session.get_artist_data(artist_id, tab=0)
+            data = self.api.get_artist_data(artist_id, tab=0)
             albums = pd.DataFrame(data['ALBUMS']['data'])
             albums['SONGS_LIST'] = albums['SONGS'].apply(lambda x: x['data'] if 'data' in x else [])
             tracks = pd.DataFrame(albums['SONGS_LIST'].explode().tolist())
@@ -99,7 +100,7 @@ class DeezerService():
             filtered_tracks = tracks[(tracks['ART_ID']==artist_id)&(tracks['DURATION']>80)]
             return filtered_tracks[['SNG_ID','SNG_TITLE','ART_ID','ART_NAME']]
         except ValidationError as e:
-            logger.warning(f"{e.__class__.__name__}: {e.message}")
+            logger.warning(f"{e.__class__.__name__}: {e.title} - {e.error_count()} error(s)")
             logger.warning(f"Failed to retrieve or validate tracks list for artist ID {artist_id}")
             return pd.DataFrame([])
 
@@ -112,12 +113,12 @@ class DeezerService():
 
     def __get_last_playlist_id(self) -> str:
         try:
-            data = self.session.get_profile_data(tab='home')
+            data = self.api.get_profile_data(tab='home')
             user_playlists = data['TAB']['home']['playlists']
             last_playlist = user_playlists['data'][0]
             return last_playlist['PLAYLIST_ID']
         except ValidationError as e:
-            logger.error(f"{e.__class__.__name__}: {e.message}")
+            logger.error(f"{e.__class__.__name__}: {e.title} - {e.error_count()} error(s)")
             raise DeezerServiceError("Failed to retrieve or validate user's playlists")
     
     def __get_flow_songs(self) -> dict:

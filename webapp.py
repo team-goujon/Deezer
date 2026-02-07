@@ -1,8 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, make_response, session
 from flask_session import Session
 from cachelib.file import FileSystemCache
 from service import DeezerService
 from utils.models import GoujonPlaylistModel
+from service.auth import is_auth, authenticate, require_auth
 import pandas as pd
 import logging
 logger = logging.getLogger(__name__)
@@ -15,15 +16,22 @@ app.config.from_object(__name__)
 Session(app)
 service = DeezerService()
 
-@app.route('/', methods=['GET', 'POST'])
-def home():
+@app.route('/login', methods=['GET', 'POST'])
+def login():
     if request.method == 'POST':
-        session['service'] = DeezerService()
+        session['auth'] = authenticate()
         return redirect(url_for('menu'))
-    return render_template('home.html')
+    if is_auth(session):
+        return redirect(url_for('menu'))
+    return render_template('login.html')
 
+@app.route('/logout', methods=['GET'])
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
 
-@app.route('/menu', methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'])
+@require_auth
 def menu():
     if request.method == 'POST':
         playlist_to_create = GoujonPlaylistModel(name="", public=False, selected_artists=pd.DataFrame([]), track_list=pd.DataFrame([]))
@@ -49,6 +57,7 @@ def menu():
     return render_template('menu.html')
 
 @app.route('/playlist_to_create', methods=['GET', 'POST'])
+@require_auth
 def playlist_to_create():
     playlist_to_create: GoujonPlaylistModel = session['playlist_to_create']
     if request.method == 'POST':
@@ -58,6 +67,7 @@ def playlist_to_create():
     return render_template('playlist_to_create.html', tracks=track_list_to_render)
 
 @app.route('/artist_selection', methods=['GET', 'POST'])
+@require_auth
 def artist_selection():
     artist_to_display = session['artist_to_display']
     playlist_to_create: GoujonPlaylistModel = session['playlist_to_create']
@@ -68,6 +78,18 @@ def artist_selection():
         return redirect(url_for('playlist_to_create'))
     artist_to_be_rendered = artist_to_display.to_dict(orient='records')
     return render_template('artist_selection.html', artists=artist_to_be_rendered, mode=session['playlist_options']['mode'])
+
+@app.route('/cancel', methods=['GET'])
+def cancel():
+    session.pop('form_data', None)
+    session.pop('artists_list', None)
+    session.pop('artists_to_display', None)
+    session.pop('track_list', None)
+    return redirect(url_for('menu'))
+
+@app.errorhandler(500)
+def internal_error(error):
+    return render_template('error.html', error_message=error)
 
 if __name__ == '__main__':
     app.run(debug=True)

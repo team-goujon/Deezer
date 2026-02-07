@@ -1,5 +1,5 @@
-#Cookies deezer
-config.ini
+# Cachelib sessions
+sessions/
 
 # VS Code
 *.vscode
