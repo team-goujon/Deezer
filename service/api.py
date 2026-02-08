@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 def with_auth(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
+        logger.debug(f"Injecting auth={g.auth} into function: {func.__name__}")
         return func(
             *args,
             auth=g.auth,
@@ -36,6 +37,7 @@ class DeezerAPI:
             raise LoginException("User is not logged in. Please check your cookies.")
         return user_data
 
+    @debugging
     @with_auth
     def __get_api(self, method: str, body: dict = None, auth: dict = None) -> dict:
         try :
@@ -56,6 +58,7 @@ class DeezerAPI:
                 "input": "3",
                 "method": method,
             }
+            logger.debug(f"Payload for API call: {payload}")
             resp = req.post(self.API_URL, params=payload, json=body)
             resp.raise_for_status()
             logger.debug(f"Response status code: {resp.status_code}")

@@ -36,7 +36,7 @@ class DeezerService:
             logger.error(f"{e.__class__.__name__}: {e}")
             raise DeezerServiceError(f"{e.message}")
 
-    @debugging
+    # @debugging
     def __get_user_favorites_artists(self) -> pd.DataFrame:
         try:
             data = self.api.get_profile_data(tab='artists')
@@ -75,7 +75,7 @@ class DeezerService:
             logger.warning(f"Failed to retrieve or validate related artists for artist ID {artist_id}")
             return pd.DataFrame([])
     
-    @debugging
+    # @debugging
     def __set_random_tracks_list(self, selected_artists, number_tracks_by_artist) -> pd.DataFrame:
         artist_list = selected_artists['ART_ID'].to_list()
         artist_list.append('352227652')
