@@ -99,7 +99,6 @@ class DeezerService:
             tracks = pd.DataFrame(albums['SONGS_LIST'].explode().tolist())
             tracks['DURATION'] = tracks['DURATION'].astype(int)
             filtered_tracks = tracks[(tracks['ART_ID']==artist_id)&(tracks['DURATION']>80)]
-            print(filtered_tracks.columns.tolist())
             return filtered_tracks[['SNG_ID','SNG_TITLE','ART_ID','ART_NAME', 'ART_PICTURE']]
         except ValidationError as e:
             logger.warning(f"{e.__class__.__name__}: {e.title} - {e.error_count()} error(s)")
