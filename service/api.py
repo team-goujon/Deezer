@@ -37,7 +37,7 @@ class DeezerAPI:
             raise LoginException("User is not logged in. Please check your cookies.")
         return user_data
 
-    @debugging
+    # @debugging
     @with_auth
     def __get_api(self, method: str, body: dict = None, auth: dict = None) -> dict:
         try :

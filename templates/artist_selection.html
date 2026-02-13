@@ -5,10 +5,11 @@
     <div class="align-items-center mb-3">
       <h2>Choose some artists</h2>
       <div class="overflow-scroll" style="max-height: 50vh;">
-        <table class="table">
+        <table class="table align-middle table-hover">
           <tbody>
             {% for values in artists %}
                 <tr>
+                    <td><img src="https://cdn-images.dzcdn.net/images/artist/{{ values['ART_PICTURE'] }}/56x56-000000-80-0-0.jpg" alt="artist image" class="img-fluid rounded-circle" /></td>
                     <td>{{ values['ART_NAME'] }}</td>
                     <td>
                       <div class="form-check">

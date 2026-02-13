@@ -63,7 +63,7 @@ def playlist_to_create():
     if request.method == 'POST':
         service.save_playlist_on_deezer_profile(playlist_to_create)
         return redirect(url_for('menu'))
-    track_list_to_render = playlist_to_create.track_list[['SNG_TITLE', 'ART_NAME']].to_dict(orient='records')
+    track_list_to_render = playlist_to_create.track_list[['SNG_TITLE', 'ART_NAME', 'ART_PICTURE']].to_dict(orient='records')
     return render_template('playlist_to_create.html', tracks=track_list_to_render)
 
 @app.route('/artist_selection', methods=['GET', 'POST'])
