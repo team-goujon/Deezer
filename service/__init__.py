@@ -108,7 +108,8 @@ class DeezerService:
     def save_playlist_on_deezer_profile(self, playlist_to_create: GoujonPlaylistModel):
         self.api.create_playlist(name=playlist_to_create.name, description="GoujonPlayslit", public=playlist_to_create.public)
         playlist_id = self.__get_last_playlist_id()
-        songs_list_formated = [[s,0] for s in playlist_to_create.track_list['SNG_ID']]
+        songs_list = playlist_to_create.track_list['SNG_ID'].drop_duplicates().to_list()
+        songs_list_formated = [[s,0] for s in songs_list]
         self.api.add_songs_to_playlist(songs_list_formated, playlist_id)
         pass
 
