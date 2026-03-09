@@ -1,10 +1,70 @@
 {% extends "base.html" %}
-{% block title %}Deezer Service by Goujon{% endblock %}
+{% block title %}Login - Deezer Service by Goujon{% endblock %}
 {% block content %}
-  <form action="#" method="post">
-    <div class="m-3">
-      <button type="submit" class="btn btn-primary btn-lg">Login on Deezer</button>
+  <div class="bg-secondary m-2 p-3 rounded">
+    <!-- Error message if present -->
+    {% if error %}
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Authentication Failed:</strong> {{ error }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endif %}
+    
+    <h5>Enter Your Deezer Cookies</h5>  
+    <!-- Instructions -->
+    <div class="alert alert-info mb-3" role="alert">
+      <ol class="mb-0 small text-start">
+        <li>Open <a href="https://www.deezer.com" target="_blank">Deezer.com</a> in your browser</li>
+        <li>Log in to your Deezer account</li>
+        <li>Open Developer Tools (Press <code>F12</code> or <code>Ctrl+Shift+I</code>)</li>
+        <li>Go to the <strong>Application</strong> tab (or <strong>Storage</strong> in Firefox)</li>
+        <li>Under <strong>Cookies</strong>, select <strong>https://www.deezer.com</strong></li>
+        <li>Find and copy the <code>arl</code> cookie value</li>
+        <li>Find and copy the <code>sid</code> cookie value</li>
+        <li>Paste them in the form below</li>
+      </ol>
     </div>
-  </form>
+    
+    <!-- Cookie form -->
+    <form method="post" action="{{ url_for('login') }}">
+      <div class="mb-3">
+        <div class="mb-3">
+          <label for="arl" class="form-label">
+            Cookie <code>arl</code><span class="text-danger">*</span>
+          </label>
+          <textarea 
+            class="form-control" 
+            id="arl" 
+            name="arl" 
+            placeholder="Paste your 'arl' cookie value here"
+            rows="5"
+            style="resize: none;"
+            required
+          ></textarea>
+        </div>
+        
+        <div class="mb-3">
+          <label for="sid" class="form-label">
+            Cookie <code>sid</code> <span class="text-danger">*</span>
+          </label>
+          <textarea 
+            class="form-control" 
+            id="sid" 
+            name="sid" 
+            placeholder="Paste your 'sid' cookie value here"
+            rows="1"
+            style="resize: none;"
+            required
+          ></textarea>
+        </div>
+        
+        <div class="mb-3">
+          <div class="col text-center"></div>
+            <button type="submit" class="btn btn-primary">Authenticate</button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
 {% endblock %}
    

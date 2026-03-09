@@ -29,7 +29,7 @@ config_dict = {
         },
         'service.api': {
                 'handlers': ['console'],
-                'level': logging.DEBUG,
+                'level': logging.INFO,
                 'propagate': False
         },
         'service': {

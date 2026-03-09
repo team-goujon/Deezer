@@ -19,8 +19,21 @@ service = DeezerService()
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        session['auth'] = authenticate()
+        arl = request.form.get('arl', '').strip()
+        sid = request.form.get('sid', '').strip()
+        
+        if not arl or not sid:
+            return render_template('login.html', error='Both arl and sid cookies are required')
+        
+        auth_data = authenticate(arl, sid)
+        
+        if not auth_data:
+            return render_template('login.html', error='Invalid cookies. Please check your values and try again.')
+        
+        session['auth'] = auth_data
+        logger.info(f"User authenticated successfully")
         return redirect(url_for('menu'))
+    
     if is_auth(session):
         return redirect(url_for('menu'))
     return render_template('login.html')
