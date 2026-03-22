@@ -1,0 +1,6 @@
+__pycahe__
+.venv
+sessions
+.gitignore
+maquette.excalidraw
+test.py
