@@ -1,8 +1,6 @@
 __pycahe__
 .venv
-flask_session
 sessions
 .gitignore
-app.log
 maquette.excalidraw
 test.py
