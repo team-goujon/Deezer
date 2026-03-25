@@ -4,6 +4,7 @@ import pytest
 from flask import Flask, g
 from service.api import DeezerAPI
 from utils.exceptions import LoginException
+from datetime import datetime
 
 
 @pytest.fixture
@@ -145,7 +146,8 @@ def test_create_playlist_check_in_profile(flask_app, full_auth):
     with flask_app.app_context():
         g.auth = full_auth
         api = DeezerAPI()
-        playlist_name = 'test_integration_api'
+        ts = datetime.now().strftime("%Y%m%d%H%M%S")
+        playlist_name = f'test_integration_api_{ts}'
         api.create_playlist(playlist_name, "desc", False)
         profile = api.get_profile_data(tab='home')
         titles = [p["TITLE"] for p in profile["TAB"]["home"]["playlists"]["data"]]
