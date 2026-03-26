@@ -23,12 +23,17 @@ def base_auth():
 
 
 @pytest.fixture
-def full_auth():
+def full_auth(flask_app, base_auth):
     """Charge les cookies depuis les variables d'environnement."""
+    with flask_app.app_context():
+        g.auth = base_auth
+        api = DeezerAPI()
+        result = api.get_user_data()
+
     arl = os.environ.get("DEEZER_ARL")
     sid = os.environ.get("DEEZER_SID")
-    api_token = os.environ.get("DEEZER_API_TOKEN")
-    user_id = os.environ.get("DEEZER_USER_ID")
+    api_token = result["api_token"]
+    user_id = result["user_id"]
     if not arl or not sid or not api_token or not user_id:
         pytest.skip("Toutes les variables d'environnement requises pour ce test d'intégration")
     return {"arl": arl, "sid": sid, "api_token": api_token, "user_id": int(user_id)}
