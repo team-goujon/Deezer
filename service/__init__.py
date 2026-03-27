@@ -34,7 +34,7 @@ class DeezerService:
             return self.__get_user_favorites_artists()
         except Exception as e:
             logger.error(f"{e.__class__.__name__}: {e}")
-            raise DeezerServiceError(f"{e.message}")
+            raise DeezerServiceError(str(e))
 
     # @debugging
     def __get_user_favorites_artists(self) -> pd.DataFrame:

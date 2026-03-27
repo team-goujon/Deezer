@@ -70,6 +70,9 @@ class DeezerAPI:
             else:
                 logger.debug(f"No data returned")
                 return None
+        except DeezerAPIError as e:
+            logger.error(f"DeezerAPIError: {e.message}")
+            raise
         except Exception as e:
             logger.debug(e)
             return None
