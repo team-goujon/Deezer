@@ -25,6 +25,7 @@ class DeezerService:
             return playlist_to_create
         except Exception as e:
             logger.error(f"{e.__class__.__name__}: {e}")
+            raise DeezerServiceError(str(e))
 
     # @debugging
     def set_artist_selection(self, mode) -> pd.DataFrame:
