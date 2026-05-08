@@ -4,6 +4,7 @@ from cachelib.file import FileSystemCache
 from service import DeezerService
 from utils.models import GoujonPlaylistModel
 from service.auth import is_auth, authenticate, require_auth
+from version import VERSION, RELEASE_DATE
 import pandas as pd
 import logging
 logger = logging.getLogger(__name__)
@@ -15,6 +16,10 @@ SESSION_CACHELIB = FileSystemCache(threshold=500, cache_dir="./sessions")
 app.config.from_object(__name__)
 Session(app)
 service = DeezerService()
+
+@app.context_processor
+def inject_app_metadata():
+    return {'app_version': VERSION, 'app_date': RELEASE_DATE}
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
