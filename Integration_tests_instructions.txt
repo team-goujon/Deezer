@@ -1,3 +1,0 @@
-Create a file named .env in the project root with the following lines:
-DEEZER_ARL=your_arl
-DEEZER_SID=your_sid
