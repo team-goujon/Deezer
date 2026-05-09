@@ -1,6 +1,8 @@
 import os
 import pytest
 from flask import Flask, g
+from flask_session import Session
+from cachelib import SimpleCache
 from pydantic import BaseModel, ValidationError
 from dotenv import load_dotenv
 from service.api import DeezerAPI
@@ -12,7 +14,12 @@ INVALID_AUTH = {"arl": "invalid", "sid": "invalid", "api_token": ""}
 
 @pytest.fixture
 def flask_app():
-    return Flask(__name__)
+    app = Flask(__name__)
+    app.config['SESSION_TYPE'] = 'cachelib'
+    app.config['SESSION_SERIALIZATION_FORMAT'] = 'json'
+    app.config['SESSION_CACHELIB'] = SimpleCache()
+    Session(app)
+    return app
 
 
 @pytest.fixture
