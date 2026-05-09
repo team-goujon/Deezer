@@ -26,6 +26,9 @@ jobs:
         run: pytest tests/unit_tests --cov --cov-append
       
       - name: Run integration tests
+        env:
+          DEEZER_ARL: ${{ secrets.TEST_DEEZER_ARL }}
+          DEEZER_SID: ${{ secrets.TEST_DEEZER_SID }}
         run: pytest tests/integration_tests --cov --cov-append
       
       - name: Set up Docker Buildx
