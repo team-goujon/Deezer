@@ -224,3 +224,8 @@ def test_set_random_tracks_list_no_tracks_found(service, playlist_to_create, val
             number_tracks_by_artist=2
         )
 
+
+def test_get_last_playlist_id_no_playlists(service, validation_error):
+    service.api.get_profile_data.side_effect = validation_error
+    with pytest.raises(DeezerServiceError, match="Failed to retrieve or validate user's playlists"):
+        service._DeezerService__get_last_playlist_id()
