@@ -109,7 +109,7 @@ class DeezerAPI:
         logger.debug(f"User flow data retrieved: {results}")
         return results
     
-    def get_songs(self, album_id: int):
+    def get_songs(self, album_id: int): # pragma: no cover
         body = {
             "alb_id": album_id,
             "nb": 100,

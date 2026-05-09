@@ -35,6 +35,10 @@ def test_authenticate_with_invalid_cookies(monkeypatch):
     auth_data = authenticate("invalid_arl", "invalid_sid")
     assert auth_data == {}  
 
+def test_authenticate_with_missing_cookies():
+    auth_data = authenticate("", "")
+    assert auth_data == {}
+
 
 def test_require_auth_decorator(flask_app):
     @flask_app.route('/login')
