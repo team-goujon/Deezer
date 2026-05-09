@@ -145,6 +145,58 @@ git checkout v1.0.1  # Previous tag
 flyctl deploy --app teamgoujon-prod
 ```
 
+### Release Process
+
+The app displays version and release date on the UI. Here's how to manage them:
+
+**Before creating a GitHub Release:**
+
+1. **Update version.py** (on your feature branch or main):
+   ```python
+   VERSION = "1.1.0"  # Bump version number
+   RELEASE_DATE = "2026-05-09"  # Today's date (YYYY-MM-DD)
+   ```
+
+2. **Commit and push to main:**
+   ```bash
+   git add version.py
+   git commit -m "Bump version to 1.1.0"
+   git push origin main
+   ```
+
+3. **Wait for tests to pass** (check GitHub Actions)
+
+4. **Create GitHub Release** with matching tag:
+   - Go to repo → Releases → Draft new release
+   - Tag: `v1.1.0` (must match VERSION in version.py)
+   - Title: `Release 1.1.0`
+   - Description: What's new, features, bugfixes
+   - Click "Publish release"
+
+5. **Deployment starts automatically!**
+   - GitHub Actions runs deploy-prod.yml
+   - Fly.io deploys your app
+   - Users see updated version on webapp
+
+**Example:**
+```
+version.py: VERSION = "1.1.0", RELEASE_DATE = "2026-05-09"
+    ↓ (git commit + push)
+main branch
+    ↓ (tests pass)
+You create GitHub Release v1.1.0
+    ↓ (publish)
+deploy-prod.yml runs automatically
+    ↓
+App deployed, users see v1.1.0 with release date
+```
+
+**Best practices:**
+- Keep version.py in sync with GitHub Release tag
+- Use semantic versioning: v1.0.0, v1.1.0, v2.0.0
+- Update RELEASE_DATE to today's date when releasing
+- Write clear release notes (what changed, what's new)
+
 ---
 
 ## Fly.io Setup
