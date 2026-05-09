@@ -103,3 +103,20 @@ def test_create_playlist_check_in_profile(flask_app, full_auth):
         profile = api.get_profile_data(tab='home')
         titles = [p["TITLE"] for p in profile["TAB"]["home"]["playlists"]["data"]]
         assert playlist_name in titles, "La playlist créée n'apparaît pas dans le profil de l'utilisateur"
+        playlist_id = profile["TAB"]["home"]["playlists"]["data"][0]["PLAYLIST_ID"]
+        api.delete_playlist(playlist_id)  # Nettoyage : supprimer la playlist après le test 
+
+def test_add_songs_to_playlist_and_check_in_profile(flask_app, full_auth):
+    with flask_app.app_context():
+        g.auth = full_auth
+        api = DeezerAPI()
+        ts = datetime.now().strftime("%Y%m%d%H%M%S")
+        playlist_name = f'test_integration_api_{ts}'
+        api.create_playlist(playlist_name, "desc", False)
+        profile = api.get_profile_data(tab='home')
+        playlist_id = profile["TAB"]["home"]["playlists"]["data"][0]["PLAYLIST_ID"]
+        api.add_songs_to_playlist([[3135556, 0]], playlist_id)  # Ajouter "Harder, Better, Faster, Stronger" de Daft Punk
+        songs = api.get_playlist_songs(playlist_id)
+        song_ids = [s["SNG_ID"] for s in songs['data']]
+        assert '3135556' in song_ids, "La chanson ajoutée n'apparaît pas dans les détails de la playlist"
+        api.delete_playlist(playlist_id)  # Nettoyage : supprimer la playlist après le test

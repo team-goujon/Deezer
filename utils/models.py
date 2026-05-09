@@ -78,6 +78,7 @@ deezer_validation_models = {
     ('get_artist_data','1'): GetRelatedArtistsModel,
     ('get_profile_data','artists'): GetUserFavoritesArtistsModel,
     ('get_profile_data','home'): GetLastPlaylistIdModel,
+    ('get_profile_data','playlists'): GetLastPlaylistIdModel,
     ('get_user_flow',''): ListSongModel
 }
 
