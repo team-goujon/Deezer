@@ -12,6 +12,12 @@ def test_load_configuration_file_not_found(monkeypatch):
     config = load_configuration()
     assert config.sections() == []
 
+def test_load_configuration_permission_error(monkeypatch):
+    def mock_read(file):
+        raise PermissionError("Permission denied")
+    monkeypatch.setattr("configparser.ConfigParser.read", mock_read)
+    with pytest.raises(ConfigException):
+        load_configuration()
 
 def test_get_config_section_success():
     config_section = get_config_section("service")
