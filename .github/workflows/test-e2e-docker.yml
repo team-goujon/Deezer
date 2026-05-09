@@ -43,16 +43,18 @@ jobs:
   test:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     
     services:
       deezer:
         image: ${{ needs.build.outputs.REGISTRY }}/${{ needs.build.outputs.IMAGE_NAME }}:latest
-        options: >-
-          -p 5000:5000
-          --health-cmd="curl -f http://localhost:5000/login || exit 1"
-          --health-interval=10s
-          --health-timeout=2s
-          --health-retries=5
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        ports:
+          - 5000:5000
     
     steps:
       - uses: actions/checkout@v4
@@ -68,7 +70,7 @@ jobs:
       
       - name: Run E2E tests
         env:
+          E2E_BASE_URL: http://127.0.0.1:5000
           DEEZER_ARL: ${{ secrets.TEST_DEEZER_ARL }}
           DEEZER_SID: ${{ secrets.TEST_DEEZER_SID }}
-        run: pytest tests/e2e --base-url=http://deezer:5000 -v
-
+        run: pytest tests/e2e_tests -v
