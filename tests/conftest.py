@@ -39,12 +39,20 @@ def validation_error():
 
 
 @pytest.fixture
-def base_auth():
+def deezer_cookies():
     """Charge les cookies depuis les variables d'environnement."""
     arl = os.environ.get("DEEZER_ARL")
     sid = os.environ.get("DEEZER_SID")
     if not arl or not sid:
-        pytest.skip("DEEZER_ARL et DEEZER_SID requis pour ce test d'intégration")
+        pytest.skip("DEEZER_ARL et DEEZER_SID requis pour ce test")
+    return {"arl": arl, "sid": sid}
+
+
+@pytest.fixture
+def base_auth(deezer_cookies):
+    """Retourne les cookies Deezer au format attendu par l'API."""
+    arl = deezer_cookies["arl"]
+    sid = deezer_cookies["sid"]
     return {"arl": arl, "sid": sid, "api_token": ""}
 
 
@@ -55,10 +63,8 @@ def full_auth(flask_app, base_auth):
         g.auth = base_auth
         result = DeezerAPI().get_user_data()
 
-    arl = os.environ.get("DEEZER_ARL")
-    sid = os.environ.get("DEEZER_SID")
     api_token = result["api_token"]
     user_id = result["user_id"]
-    if not arl or not sid or not api_token or not user_id:
+    if not api_token or not user_id:
         pytest.skip("Toutes les variables d'environnement requises pour ce test d'intégration")
-    return {"arl": arl, "sid": sid, "api_token": api_token, "user_id": int(user_id)}
+    return {**base_auth, "api_token": api_token, "user_id": int(user_id)}
