@@ -1,7 +1,5 @@
-import pytest
 from service import DeezerService
 from service.api import DeezerAPI
-from utils.exceptions import DeezerServiceError
 from flask import g
 from datetime import datetime
 from utils.models import GoujonPlaylistModel

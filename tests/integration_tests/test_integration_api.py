@@ -1,5 +1,4 @@
 import pytest
-from pydantic import ValidationError
 from flask import g
 from service.api import DeezerAPI
 from utils.exceptions import LoginException, DeezerAPIError
@@ -111,7 +110,7 @@ def test_add_songs_to_playlist_and_check_in_profile(flask_app, full_auth):
         g.auth = full_auth
         api = DeezerAPI()
         ts = datetime.now().strftime("%Y%m%d%H%M%S")
-        playlist_name = f'test_integration_api_{ts}'
+        playlist_name = f'test_integration_api2_{ts}'
         api.create_playlist(playlist_name, "desc", False)
         profile = api.get_profile_data(tab='home')
         playlist_id = profile["TAB"]["home"]["playlists"]["data"][0]["PLAYLIST_ID"]

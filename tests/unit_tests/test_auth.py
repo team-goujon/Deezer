@@ -1,5 +1,4 @@
 import pytest
-from flask import g
 from service.auth import is_auth, authenticate, require_auth
 
 @pytest.fixture
