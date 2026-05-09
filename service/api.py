@@ -141,6 +141,7 @@ class DeezerAPI:
         results = self.__get_api("playlist.addSongs", body)
         pass
 
+    @data_validation
     def get_playlist_songs(self, playlist_id: int):
         body = {
             "playlist_id": str(playlist_id),
@@ -148,7 +149,6 @@ class DeezerAPI:
             "start": 0
         }
         results = self.__get_api("playlist.getSongs", body)
-        logger.info([s["SNG_ID"] for s in results['data']])
         return results
     
     def delete_playlist(self, playlist_id: int):
