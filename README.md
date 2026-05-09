@@ -41,32 +41,34 @@ A Flask web application that automates Deezer playlist creation from artist list
 ### Workflow Diagram
 
 ```
-┌─ Feature Branch
-│  └─ Git commit → Push
+┌─ Feature Branch (your-feature)
+│  └─ Git commit → Push to GitHub
 │
 └─ GitHub PR to main
-   └─ Checks run:
-      ├─ Unit Tests (pytest)
-      ├─ Integration Tests (pytest)
-      ├─ Coverage (pytest)
-      └─ Linting/Type checking (optional)
-   └─ Merge to main
+   ├─ Trigger: test-unit-integration.yml
+   │  ├─ Run unit tests (pytest)
+   │  ├─ Run integration tests (pytest)
+   │  └─ Block merge if tests fail
+   │
+   └─ Approve & Merge to main
+      ├─ Trigger: test-unit-integration.yml (verify)
+      │  └─ Unit + Integration tests pass
       │
-      └─ Staging Deployment
-         ├─ Fly.io auto-deploys to staging
-         └─ E2E Tests run (GitHub Actions)
-            ├─ Hit: https://deezer-staging-xyz.fly.dev
-            └─ Use: DEEZER_ARL, DEEZER_SID (GitHub Secrets)
+      └─ Trigger: test-e2e-docker.yml
+         ├─ Build Docker image
+         ├─ Start app in container
+         ├─ Run E2E tests (pytest + requests)
+         └─ Tests pass
          │
-         └─ Approval for Production
+         └─ Create GitHub Release (manually)
+            ├─ Tag: v1.0.0 (semantic versioning)
+            ├─ Publish release
             │
-            └─ GitHub Release (v1.0.0, v1.1.0, etc.)
-               │
-               ├─ Option A: Manual Deploy
-               │  └─ Run: flyctl deploy --app deezer-prod
-               │
-               └─ Option B: Auto Deploy (future)
-                  └─ GitHub Actions auto-deploys on release
+            └─ Trigger: deploy-prod.yml (GitHub Actions)
+               ├─ Pull code at v1.0.0
+               ├─ Login to Fly.io (FLY_API_TOKEN)
+               └─ Deploy to production automatically
+                  └─ App is live at teamgoujon.net
 ```
 
 ---
@@ -75,7 +77,6 @@ A Flask web application that automates Deezer playlist creation from artist list
 
 ### Unit Tests
 - **Location:** `tests/unit/`
-- **Owner:** Sam (branch 24-add-unit-tests)
 - **Framework:** pytest
 - **Coverage:** Target 80%+
 - **Scope:** Individual functions, DeezerService, auth module
@@ -83,19 +84,18 @@ A Flask web application that automates Deezer playlist creation from artist list
 
 ### Integration Tests
 - **Location:** `tests/integration/`
-- **Owner:** Sam
 - **Framework:** pytest
 - **Scope:** Service interactions, API calls, database operations
-- **Requirements:** Test Deezer cookies
+- **Requirements:** `DEEZER_ARL`, `DEEZER_SID` in GitHub Secrets
 - **Triggers:** Every PR to main
 
 ### E2E Tests
 - **Location:** `tests/e2e/`
-- **Owner:** You
 - **Framework:** pytest + requests
 - **Scope:** Full user workflows (login → playlist creation → API calls)
+- **Environment:** Docker container (spawned in GitHub Actions)
 - **Requirements:** `DEEZER_ARL`, `DEEZER_SID` in GitHub Secrets
-- **Triggers:** After main branch deployment to staging
+- **Triggers:** After main branch push (Docker + E2E in same workflow)
 - **Example flows to test:**
   - Login with valid cookies → redirect to menu
   - Create playlist → verify Deezer API response
@@ -107,32 +107,43 @@ A Flask web application that automates Deezer playlist creation from artist list
 
 ### Environments
 
-**Staging** (always-on testing):
-- URL: `https://deezer-staging-xyz.fly.dev`
-- Auto-deploys on: Every push to `main`
-- Used for: E2E tests, manual QA
-- Cost: ~$2/month
-
 **Production** (release versions only):
-- URL: `https://deezer-prod-xyz.fly.dev`
-- Deploys on: Manual or automated (see options below)
+- URL: `https://deezer.teamgoujon.net` (via Cloudflare)
+- Actual: `teamgoujon-prod.fly.dev`
+- Deploys on: GitHub Actions automatically on release
 - Used for: Public access, real usage
-- Cost: ~$2/month
+- Cost: ~€2/month
 
-### Deployment Options
+**Note:** No staging environment. E2E tests run in Docker (free, in GitHub Actions).
 
-#### Option A: Manual Deployment (Current)
-1. Create release on GitHub UI (v1.0.0)
-2. When ready, deploy manually:
-   ```bash
-   flyctl deploy --app deezer-prod
-   ```
-3. Verify production is working
+### Deployment Workflow
 
-#### Option B: Automated Production Deployment (Future)
-- GitHub Actions automatically deploys to production when you publish a release
-- Added workflow: `.github/workflows/deploy-prod.yml`
-- Requires: `FLY_API_TOKEN` in GitHub Secrets
+```
+Create release on GitHub (manually)
+    ↓ (v1.0.0, v1.1.0, etc.)
+GitHub detects release event
+    ↓
+GitHub Actions runs deploy-prod.yml
+    ↓
+Automatically deploys to Fly.io production
+    ↓
+The app is now live at teamgoujon.net
+```
+
+**How to deploy:**
+1. Go to GitHub repo → Releases → Draft new release
+2. Tag: `v1.0.0` (semantic versioning)
+3. Title: `Release 1.0.0`
+4. Description: What's new
+5. Click "Publish release"
+6. **Deployment starts automatically** (check Actions tab)
+
+**Rollback:**
+```bash
+# If something goes wrong, redeploy previous release
+git checkout v1.0.1  # Previous tag
+flyctl deploy --app teamgoujon-prod
+```
 
 ---
 
@@ -149,41 +160,34 @@ A Flask web application that automates Deezer playlist creation from artist list
    flyctl auth login
    ```
 
-3. **Deploy staging app:**
+3. **Deploy production app:**
    ```bash
    cd /path/to/Deezer
-   flyctl launch --name deezer-staging
+   flyctl launch --name teamgoujon-prod
    # Accept defaults, choose deployment region
    flyctl deploy
    ```
 
-4. **Deploy production app:**
+4. **Create org for team collaboration (optional):**
    ```bash
-   flyctl launch --name deezer-prod
-   # Accept defaults
-   flyctl deploy
-   ```
-
-5. **Create org for team collaboration:**
-   ```bash
-   flyctl orgs create --name deezer-team
-   flyctl orgs invite-member AAubin --org deezer-team
+   flyctl orgs create --name teamgoujon
+   flyctl orgs invite-member AAubin --org teamgoujon
    ```
 
 ### Common Commands
 
 ```bash
 # View logs
-flyctl logs --app deezer-staging
+flyctl logs --app teamgoujon-prod
 
 # Check app status
-flyctl status --app deezer-staging
+flyctl status --app teamgoujon-prod
 
 # Redeploy
-flyctl deploy --app deezer-staging
+flyctl deploy --app teamgoujon-prod
 
 # Open app in browser
-flyctl open --app deezer-staging
+flyctl open --app teamgoujon-prod
 ```
 
 ---
@@ -191,22 +195,24 @@ flyctl open --app deezer-staging
 ## GitHub Actions Workflows
 
 ### `test-unit-integration.yml` (Runs on: PR to main)
-- Runs unit + integration tests from `24-add-unit-tests` branch
+- Runs unit + integration tests from branch 24-add-unit-tests
+- Uses `DEEZER_ARL`, `DEEZER_SID` secrets (integration tests only)
 - Reports coverage
 - Blocks merge if tests fail
 
-### `deploy-staging.yml` (Runs on: Push to main)
-- Deploys main branch to Fly.io staging
-- Waits for app to be healthy
-
-### `test-e2e-staging.yml` (Runs on: After staging deployment)
-- Runs E2E tests against staging URL
+### `test-e2e-docker.yml` (Runs on: Push to main)
+- Builds Docker image
+- Starts Flask app in container
+- Runs E2E tests against localhost:5000
 - Uses `DEEZER_ARL`, `DEEZER_SID` secrets
 - Reports results
+- **No external hosting needed** (free, runs in GitHub Actions)
 
-### `deploy-prod.yml` (Optional: Runs on: GitHub Release published)
-- Auto-deploys production (if enabled)
+### `deploy-prod.yml` (Runs on: GitHub Release published)
+- **Automatically** deploys production to Fly.io
+- Triggered when you publish a release (e.g., v1.0.0)
 - Uses `FLY_API_TOKEN` secret
+- **No manual steps required** after publishing release
 
 ---
 
@@ -216,14 +222,20 @@ In your repo, add these secrets:
 
 | Secret | Value | Used by |
 |--------|-------|---------|
-| `DEEZER_ARL` | Test Deezer ARL cookie | E2E tests |
-| `DEEZER_SID` | Test Deezer SID cookie | E2E tests |
-| `FLY_API_TOKEN` | Fly.io API token | Auto-deploy workflows |
+| `DEEZER_ARL` | Test Deezer ARL cookie | Integration + E2E tests |
+| `DEEZER_SID` | Test Deezer SID cookie | Integration + E2E tests |
+| `FLY_API_TOKEN` | Fly.io API token | Auto-deploy workflow |
 
 **To create secrets:**
 1. Go to repo → Settings → Secrets and variables → Actions
 2. Click "New repository secret"
 3. Add each secret above
+
+**To get FLY_API_TOKEN:**
+```bash
+flyctl auth token
+# Paste the output as FLY_API_TOKEN secret
+```
 
 ---
 
@@ -244,24 +256,31 @@ See [service/auth.py](service/auth.py) for implementation details.
 
 ### Running E2E tests locally
 ```bash
-# Start app in one terminal
-python webapp.py
-
-# In another terminal, set env vars and run tests
+# Method 1: With local Flask app
+python webapp.py  # In terminal 1
 export DEEZER_ARL="your_test_arl"
 export DEEZER_SID="your_test_sid"
+pytest tests/e2e --base-url=http://localhost:5000  # In terminal 2
+
+# Method 2: With Docker (same as GitHub Actions)
+docker build -t deezer .
+docker run -d --name deezer-test -p 5000:5000 \
+  -e DEEZER_ARL="your_test_arl" \
+  -e DEEZER_SID="your_test_sid" \
+  deezer
 pytest tests/e2e --base-url=http://localhost:5000
+docker stop deezer-test
 ```
 
 ### Debugging
-- Check logs: `flyctl logs --app deezer-staging`
+- Check Fly.io logs: `flyctl logs --app teamgoujon-prod`
 - View workflow runs: GitHub repo → Actions tab
 - Test locally first before pushing
 
 ### Adding new tests
-- Unit tests: Add to `tests/unit/` (SAM)
-- Integration tests: Add to `tests/integration/` (SAM)
-- E2E tests: Add to `tests/e2e/` (you)
+- Unit tests: Add to `tests/unit/`
+- Integration tests: Add to `tests/integration/`
+- E2E tests: Add to `tests/e2e/`
 - All tests use pytest framework
 
 ---
@@ -306,5 +325,5 @@ python webapp.py
 - Check Fly.io app is running and healthy
 
 **Questions?**
-- Reach out to your team (you + Sam)
+- Reach out to the team
 - Check Fly.io docs: https://fly.io/docs/
