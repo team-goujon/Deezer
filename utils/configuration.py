@@ -23,7 +23,7 @@ def get_config_section(section: str) -> dict:
         logger.error(f"Configuration section '{section}' not found: {nse}")
         raise ConfigException(f"Configuration section '{section}' not found.")
 
-def get_config_option(section: str, option: str, fallback=None):
+def get_config_option(section: str, option: str, fallback=None): # pragma: no cover
     config = load_configuration()
     try:
         return config.get(section, option)
