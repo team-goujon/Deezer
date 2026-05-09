@@ -186,5 +186,5 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 sessions/
-test.py
+
 

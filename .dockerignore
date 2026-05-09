@@ -1,6 +1,6 @@
 __pycahe__
+.pytest_cache
 .venv
 sessions
 .gitignore
-maquette.excalidraw
-test.py
+*.excalidraw

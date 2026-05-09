@@ -70,6 +70,9 @@ class DeezerAPI:
             else:
                 logger.debug(f"No data returned")
                 return None
+        except DeezerAPIError as e:
+            logger.error(f"DeezerAPIError: {e.message}")
+            raise
         except Exception as e:
             logger.debug(e)
             return None
@@ -106,7 +109,7 @@ class DeezerAPI:
         logger.debug(f"User flow data retrieved: {results}")
         return results
     
-    def get_songs(self, album_id: int):
+    def get_songs(self, album_id: int): # pragma: no cover
         body = {
             "alb_id": album_id,
             "nb": 100,
