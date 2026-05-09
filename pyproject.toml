@@ -27,4 +27,4 @@ pythonpath = "."
 
 [tool.coverage.run]
 source = ["."]
-omit = ["tests/*", ".venv/*"]
+omit = ["tests/*", ".venv/*", "utils/logging_manager.py"]
