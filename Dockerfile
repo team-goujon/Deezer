@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN pip install -r requirements.txt && pip install gunicorn
+RUN pip install -r requirements.txt
 
 EXPOSE 5000
 
