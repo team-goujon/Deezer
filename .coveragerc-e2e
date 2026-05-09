@@ -1,0 +1,7 @@
+[run]
+source = .
+omit =
+    tests/*
+    .venv/*
+    utils/logging_manager.py
+    version.py
