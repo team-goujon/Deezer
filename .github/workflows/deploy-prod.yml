@@ -1,0 +1,44 @@
+name: Deploy to Production
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to deploy (e.g., v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.version }}
+      
+      - name: Setup Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+      
+      - name: Deploy info
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "📦 Deploying release: ${{ github.event.release.tag_name }}"
+          else
+            echo "🚀 Manual deployment: ${{ github.event.inputs.version }}"
+          fi
+      
+      - name: Deploy to production
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: flyctl deploy --app teamgoujon-prod
+      
+      - name: Get deployment info
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          echo "Deployment successful!"
+          echo "App: https://teamgoujon.com"
+          flyctl status --app teamgoujon-prod
