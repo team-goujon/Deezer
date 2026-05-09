@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: team-goujon/deezer
 
 jobs:
   build:
@@ -14,7 +14,10 @@ jobs:
     permissions:
       contents: read
       packages: write
-    
+    outputs:
+      REGISTRY: ${{ env.REGISTRY }}
+      IMAGE_NAME: ${{ env.IMAGE_NAME }}
+
     steps:
       - uses: actions/checkout@v4
       
@@ -43,11 +46,11 @@ jobs:
     
     services:
       deezer:
-        image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        image: ${{ needs.build.outputs.REGISTRY }}/${{ needs.build.outputs.IMAGE_NAME }}:latest
         options: >-
           -p 5000:5000
           --health-cmd="curl -f http://localhost:5000/login || exit 1"
-          --health-interval=5s
+          --health-interval=10s
           --health-timeout=2s
           --health-retries=5
     
