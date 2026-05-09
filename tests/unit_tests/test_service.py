@@ -62,9 +62,8 @@ def make_mock_artist_data_songs(artist_id, tab=0):
 
 def mock_get_artist_data_related(artist_id, tab=1):
     data = [
-        {"ART_ID": 4, "ART_NAME": "Artist 4", "ART_PICTURE": "picture4.jpg"},
-        {"ART_ID": 5, "ART_NAME": "Artist 5", "ART_PICTURE": "picture5.jpg"},
-        {"ART_ID": 6, "ART_NAME": "Artist 6", "ART_PICTURE": "picture6.jpg"},
+        {"ART_ID": i, "ART_NAME": f"Artist {i}", "ART_PICTURE": f"picture{i}.jpg"}
+        for i in range(4,7)
     ]
     data = data[:4 - artist_id]  # Artist 1 has 3 related, Artist 2 has 2, Artist 3 has 1
     return {"RELATED_ARTISTS": {"data": data}}
@@ -90,12 +89,34 @@ def test_create_playlist_favorites_without_relatives(service, playlist_to_create
     track_ids = result.track_list['SNG_ID'].apply(lambda x: x[-2:])
     assert all((track_ids != '05') & (track_ids != '06'))  # Tracks filtrées : durée < 80s ou ART_ID différent
 
+def test_create_playlist_favorites_with_relatives(service, playlist_to_create, favorites_options):
+    favorites_options['include_relative'] = True
+    service.api.get_profile_data.return_value = {
+        "TAB": {
+            "artists": {
+                "data": [
+                    {"ART_ID": i, "ART_NAME": f"Artist {i}", "ART_PICTURE": f"picture{i}.jpg"}
+                    for i in range(1, 3)
+                ]
+            }
+        }
+    }
+    def combined_side_effect(artist_id, tab=0):
+        if tab == 1:
+            return mock_get_artist_data_related(artist_id)
+        return make_mock_artist_data_songs(artist_id)
+
+    service.api.get_artist_data.side_effect = combined_side_effect
+
+    result = service.create_playlist(playlist_to_create, favorites_options)
+    assert isinstance(result, GoujonPlaylistModel)
+    assert result.selected_artists.shape[0] == 4  # 2 selected + 2 related
+    assert result.track_list.shape[0] == 10  # 4 artists (2 selected + 2 related + mety-k) x 2 tracks each
 
 def test_create_playlist_favorites_validation_error(service, playlist_to_create, favorites_options, validation_error):
     service.api.get_profile_data.side_effect = validation_error
     with pytest.raises(DeezerServiceError):
         service.create_playlist(playlist_to_create, favorites_options)
-
 
 def test_create_playlist_with_no_tracks_found(service, playlist_to_create, validation_error):
     options = {
@@ -189,3 +210,22 @@ def test_add_related_artists_with_related_found(service):
     assert isinstance(result, pd.DataFrame)
     assert result.shape[0] == 5
     assert set(result['ART_ID']) == {1, 2, 3, 4, 5}
+
+
+def test_set_random_tracks_list_no_tracks_found(service, playlist_to_create, validation_error):
+    service.api.get_artist_data.side_effect = validation_error
+    with pytest.raises(DeezerServiceError):
+        service._DeezerService__set_random_tracks_list(
+            selected_artists=pd.DataFrame({
+                'ART_ID': [1],
+                'ART_NAME': ['Artist 1'],
+                'ART_PICTURE': ['picture1.jpg']
+            }),
+            number_tracks_by_artist=2
+        )
+
+
+def test_get_last_playlist_id_no_playlists(service, validation_error):
+    service.api.get_profile_data.side_effect = validation_error
+    with pytest.raises(DeezerServiceError, match="Failed to retrieve or validate user's playlists"):
+        service._DeezerService__get_last_playlist_id()

@@ -78,7 +78,8 @@ deezer_validation_models = {
     ('get_artist_data','1'): GetRelatedArtistsModel,
     ('get_profile_data','artists'): GetUserFavoritesArtistsModel,
     ('get_profile_data','home'): GetLastPlaylistIdModel,
-    ('get_user_flow',''): ListSongModel
+    ('get_user_flow',''): ListSongModel,
+    ('get_playlist_songs',''): ListSongModel,
 }
 
 def data_validation(func):

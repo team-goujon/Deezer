@@ -17,7 +17,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.0",
+    "pytest>=9.0",
     "pytest-cov>=7.0",
 ]
 
@@ -27,4 +27,4 @@ pythonpath = "."
 
 [tool.coverage.run]
 source = ["."]
-omit = ["tests/*", ".venv/*", "utils/logging_manager.py"]
+omit = ["tests/*", ".venv/*", "utils/logging_manager.py", "webapp.py", "version.py"]
