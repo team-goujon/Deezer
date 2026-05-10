@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Playlist preview - Deezer Service by Goujon{% endblock %}
 {% block content %}
-  <form action="#" method="post" class="bg-secondary m-2 p-3 rounded">
+  <form action="#" method="post" class="dz-card m-2 px-5 py-3" style="min-width: 500px;">
     <div class="align-items-center mb-3">
-      <h2>Playlist content</h2>
-      <div class="overflow-scroll" style="max-height: 50vh;">
+      <h2>Playlist content <span class="badge bg-secondary fs-6 fw-normal">{{ tracks|length }} track{{ 's' if tracks|length > 1 }}</span></h2>
+      <div class="overflow-y-auto" style="max-height: 50vh;">
         <table class="table align-middle table-hover">
           <tbody>
             {% for values in tracks %}
@@ -20,10 +20,10 @@
     </div>
     <div class="row align-items-center mb-3">
       <div class="col text-center">
-        <a class="btn btn-danger" href="{{ url_for('cancel') }}">Cancel</a>
+        <a class="btn btn-danger" href="{{ url_for('cancel') }}"><i class="bi bi-x-circle me-1"></i>Cancel</a>
       </div>
       <div class="col text-center">
-        <button type="submit" class="btn btn-primary">Save on Deezer</button>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-cloud-upload me-1"></i>Save on Deezer</button>
       </div>
     </div>
   </form>
