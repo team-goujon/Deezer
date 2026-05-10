@@ -1,10 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Choose artists - Deezer Service by Goujon{% endblock %}
 {% block content %}
-  <form action="#" method="post" class="bg-secondary m-2 p-3 rounded">
+  <form action="#" method="post" class="dz-card m-2 px-5 py-3" style="min-width: 500px;">
     <div class="align-items-center mb-3">
-      <h2>Choose some artists</h2>
-      <div class="overflow-scroll" style="max-height: 50vh;">
+      <h2 class="mb-2">Choose some artists</h2>
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <button type="button" class="btn btn-sm btn-outline-light" id="select-all"><i class="bi bi-check-all me-1"></i>Select all</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="deselect-all"><i class="bi bi-x-lg me-1"></i>Deselect all</button>
+        <span class="text-white-50 small ms-auto"><span id="selected-count">0</span> / {{ artists|length }} selected</span>
+      </div>
+      <div class="overflow-y-auto" style="max-height: 50vh;">
         <table class="table align-middle table-hover">
           <tbody>
             {% for values in artists %}
@@ -28,12 +33,29 @@
     </div>
     <div class="row align-items-center mb-3">
       <div class="col text-center">
-        <a class="btn btn-danger" href="{{ url_for('cancel') }}">Cancel</a>
+        <a class="btn btn-danger" href="{{ url_for('cancel') }}"><i class="bi bi-x-circle me-1"></i>Cancel</a>
       </div>
       <div class="col text-center">
-        <button type="submit" class="btn btn-primary">Continue</button>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-arrow-right me-1"></i>Continue</button>
       </div>
     </div>
   </form>
+{% endblock %}
+{% block scripts %}
+<script>
+  function updateCount() {
+    $('#selected-count').text($('input[name="artist_index"]:checked').length);
+  }
+  updateCount();
+  $('input[name="artist_index"]').change(updateCount);
+  $('#select-all').click(function() {
+    $('input[name="artist_index"]').prop('checked', true);
+    updateCount();
+  });
+  $('#deselect-all').click(function() {
+    $('input[name="artist_index"]').prop('checked', false);
+    updateCount();
+  });
+</script>
 {% endblock %}
    
