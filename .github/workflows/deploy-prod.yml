@@ -13,14 +13,27 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    concurrency: production
     
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.version }}
+
+      - name: Set deployment image
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "IMAGE_TAG=${{ github.event.release.tag_name }}" >> "$GITHUB_ENV"
+          else
+            echo "IMAGE_TAG=${{ github.event.inputs.version }}" >> "$GITHUB_ENV"
+          fi
+          echo "IMAGE_NAME=registry.fly.io/teamgoujon-prod" >> "$GITHUB_ENV"
       
       - name: Setup Fly CLI
         uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
       
       - name: Deploy info
         run: |
@@ -29,11 +42,25 @@ jobs:
           else
             echo "🚀 Manual deployment: ${{ github.event.inputs.version }}"
           fi
+
+      - name: Authenticate Docker with Fly registry
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: flyctl auth docker
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
       
       - name: Deploy to production
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-        run: flyctl deploy --app teamgoujon-prod
+        run: flyctl deploy --app teamgoujon-prod --image ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
       
       - name: Get deployment info
         env:
