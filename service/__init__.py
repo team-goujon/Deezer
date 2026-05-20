@@ -79,11 +79,11 @@ class DeezerService:
     # @debugging
     def __set_random_tracks_list(self, selected_artists, number_tracks_by_artist) -> pd.DataFrame:
         artist_list = selected_artists['ART_ID'].to_list()
-        artist_list.append('352227652')
+        artist_list.append(352227652)
         logger.debug(f"Selected artists IDs: {artist_list}")
         tracks_list = pd.DataFrame([])
         for a in artist_list:
-            artist_tracks = self.__get_tracks_by_artist(a)
+            artist_tracks = self.__get_tracks_by_artist(str(a))
             if not artist_tracks.empty:
                 n_tracks = min(len(artist_tracks), number_tracks_by_artist)
                 tracks_list = pd.concat([tracks_list,artist_tracks.sample(n=n_tracks)], ignore_index=True)

@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, ConfigDict
 import pandas as pd
+import io
 import logging
 logger = logging.getLogger(__name__)
 
@@ -10,6 +11,23 @@ class GoujonPlaylistModel(BaseModel):
     public: bool
     selected_artists: pd.DataFrame
     track_list: pd.DataFrame
+
+    def to_session(self) -> dict:
+        return {
+            'name': self.name,
+            'public': self.public,
+            'selected_artists': self.selected_artists.to_json(),
+            'track_list': self.track_list.to_json(),
+        }
+
+    @classmethod
+    def from_session(cls, data: dict) -> 'GoujonPlaylistModel':
+        return cls(
+            name=data['name'],
+            public=data['public'],
+            selected_artists=pd.read_json(io.StringIO(data['selected_artists'])),
+            track_list=pd.read_json(io.StringIO(data['track_list'])),
+        )
 
 # Models for artists data (used for favorite and related artists)
 class ArtistModel(BaseModel):
