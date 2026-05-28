@@ -69,15 +69,15 @@ def menu():
         playlist_options = {
             'mode': selection_mode,
             'include_relative': include_relative,
-            'number_random_artists': request.form.get('artists_number', type=int, default=service.config.get("random_artists_number")),
-            'number_tracks_by_artist': request.form.get('songs_number', type=int, default=service.config.get("tracks_by_artist_number"))
+            'number_random_artists': request.form.get('artists_number', type=int, default=int(service.config.get("random_artists_number"))),
+            'number_tracks_by_artist': request.form.get('songs_number', type=int, default=int(service.config.get("tracks_by_artist_number")))
         }
         session['playlist_options'] = playlist_options
         if selection_mode == 'Favorites':
-            session['playlist_to_create'] = service.create_playlist(playlist_to_create, playlist_options).to_session()
+            session['playlist_to_create'] = service.create_playlist(playlist_to_create, playlist_options)
             return redirect(url_for('playlist_to_create'))
         if selection_mode == 'Flow' or selection_mode == 'Manual':
-            session['artist_to_display'] = service.set_artist_selection(selection_mode).to_json()
+            session['artist_to_display'] = service.set_artist_selection(selection_mode)
             return redirect(url_for('artist_selection'))
         
     return render_template('menu.html')
@@ -85,7 +85,7 @@ def menu():
 @app.route('/playlist_to_create', methods=['GET', 'POST'])
 @require_auth
 def playlist_to_create():
-    playlist_to_create: GoujonPlaylistModel = GoujonPlaylistModel.from_session(session['playlist_to_create'])
+    playlist_to_create = GoujonPlaylistModel.from_session(session['playlist_to_create'])
     if request.method == 'POST':
         service.save_playlist_on_deezer_profile(playlist_to_create)
         return redirect(url_for('menu'))
@@ -96,11 +96,11 @@ def playlist_to_create():
 @require_auth
 def artist_selection():
     artist_to_display = pd.read_json(io.StringIO(session['artist_to_display']))
-    playlist_to_create: GoujonPlaylistModel = GoujonPlaylistModel.from_session(session['playlist_to_create'])
+    playlist_to_create = GoujonPlaylistModel.from_session(session['playlist_to_create'])
     if request.method == 'POST':
         selected_ids = [int(id) for id in request.form.getlist('artist_index')]
         playlist_to_create.selected_artists = artist_to_display[artist_to_display['ART_ID'].isin(selected_ids)]
-        session['playlist_to_create'] = service.create_playlist(playlist_to_create, session['playlist_options']).to_session()
+        session['playlist_to_create'] = service.create_playlist(playlist_to_create, session['playlist_options'])
         return redirect(url_for('playlist_to_create'))
     artist_to_be_rendered = artist_to_display.to_dict(orient='records')
     return render_template('artist_selection.html', artists=artist_to_be_rendered, mode=session['playlist_options']['mode'])

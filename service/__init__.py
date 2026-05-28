@@ -14,25 +14,27 @@ class DeezerService:
         self.config = get_config_section("service")
         self.api = DeezerAPI()
 
-    def create_playlist(self, playlist_to_create: GoujonPlaylistModel, options: dict) -> GoujonPlaylistModel:
+    def create_playlist(self, playlist_to_create: GoujonPlaylistModel, options: dict) -> dict:
         try:
             if options['mode'] == 'Favorites':
                 user_favorites = self.__get_user_favorites_artists()
+                logger.info(f"Selected number of random artists: {type(options['number_random_artists'])}")
+                logger.info(f"Selected number of tracks by artist: {type(options['number_tracks_by_artist'])}")
                 playlist_to_create.selected_artists = user_favorites.sample(n=options['number_random_artists'])
             if options['include_relative']:
                 playlist_to_create.selected_artists = self.__add_related_artists(playlist_to_create.selected_artists)
             playlist_to_create.track_list = self.__set_random_tracks_list(playlist_to_create.selected_artists, options['number_tracks_by_artist'])
-            return playlist_to_create
+            return playlist_to_create.to_session()
         except Exception as e:
             logger.error(f"{e.__class__.__name__}: {e}")
             raise DeezerServiceError(str(e))
 
     # @debugging
-    def set_artist_selection(self, mode) -> pd.DataFrame:
+    def set_artist_selection(self, mode) -> str:
         try:
             if mode == 'Flow':
-                return self.__get_flow_artists()
-            return self.__get_user_favorites_artists()
+                return self.__get_flow_artists().to_json()
+            return self.__get_user_favorites_artists().to_json()
         except Exception as e:
             logger.error(f"{e.__class__.__name__}: {e}")
             raise DeezerServiceError(str(e))
