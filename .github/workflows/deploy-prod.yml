@@ -10,6 +10,10 @@ on:
         required: true
         type: string
 
+env:
+  REF: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.version }}
+  IMAGE_NAME: registry.fly.io/teamgoujon-prod
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -18,17 +22,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.version }}
+          ref: ${{ env.REF }}
 
-      - name: Set deployment image
-        run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            echo "IMAGE_TAG=${{ github.event.release.tag_name }}" >> "$GITHUB_ENV"
-          else
-            echo "IMAGE_TAG=${{ github.event.inputs.version }}" >> "$GITHUB_ENV"
-          fi
-          echo "IMAGE_NAME=registry.fly.io/teamgoujon-prod" >> "$GITHUB_ENV"
-      
       - name: Setup Fly CLI
         uses: superfly/flyctl-actions/setup-flyctl@master
 
@@ -54,18 +49,20 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_NAME }}:${{ env.REF }}
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
       
       - name: Deploy to production
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-        run: flyctl deploy --app teamgoujon-prod --image ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+        run: flyctl deploy --app teamgoujon-prod --image ${{ env.IMAGE_NAME }}:${{ env.REF }}
       
       - name: Get deployment info
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
           echo "Deployment successful!"
-          echo "App: https://teamgoujon.com"
+          echo "App: https://teamgoujon.net"
           flyctl status --app teamgoujon-prod
