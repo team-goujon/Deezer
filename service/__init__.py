@@ -18,8 +18,6 @@ class DeezerService:
         try:
             if options['mode'] == 'Favorites':
                 user_favorites = self.__get_user_favorites_artists()
-                logger.info(f"Selected number of random artists: {type(options['number_random_artists'])}")
-                logger.info(f"Selected number of tracks by artist: {type(options['number_tracks_by_artist'])}")
                 selected_artists = user_favorites.sample(n=options['number_random_artists'])
             else:
                 selected_artists = pd.DataFrame([a.model_dump() for a in playlist_to_create.selected_artists])
