@@ -19,8 +19,6 @@ def playlist_to_create():
     return GoujonPlaylistModel(
         name="Test Playlist",
         public=False,
-        # selected_artists=pd.DataFrame([]),
-        # track_list=pd.DataFrame([])
     )
 
 
