@@ -18,8 +18,8 @@ jobs:
           python-version: '3.14'
           cache: 'pip'
       
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - name: Install check dependencies
+        run: pip install requests
       
       - name: Check if ARL and SID cookies are valid for tests
         id: check_cookies
@@ -29,18 +29,15 @@ jobs:
           DEEZER_SID: ${{ secrets.TEST_DEEZER_SID }}
         run: python scripts/check_cookies.py
           
+      - name: Install renew dependencies
+        if: steps.check_cookies.outcome == 'failure'
+        run: pip install undetected-chromedriver selenium setuptools PyNaCl
+
       - name: Renew ARL and SID cookies if needed
         id: renew_cookies
         if: steps.check_cookies.outcome == 'failure'
         env:
           DEEZER_EMAIL: ${{ secrets.TEST_DEEZER_EMAIL }}
           DEEZER_PWD: ${{ secrets.TEST_DEEZER_PWD }}
-        run: python scripts/renew_cookies.py
-
-      - name: save new cookies to secrets
-        id: save_cookies
-        if: steps.check_cookies.outcome == 'failure' && steps.renew_cookies.outcome == 'success'
-        env:
           GH_PAT: ${{ secrets.GH_PAT }}
-        run: python scripts/save_cookies.py
-            
+        run: python scripts/renew_cookies.py
