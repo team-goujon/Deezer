@@ -41,3 +41,12 @@ jobs:
           DEEZER_PWD: ${{ secrets.TEST_DEEZER_PWD }}
           GH_PAT: ${{ secrets.GH_PAT }}
         run: python scripts/renew_cookies.py
+
+      - name: Notify cookies updated
+        if: steps.check_cookies.outcome == 'failure' && steps.renew_cookies.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "Deezer cookies renewed automatically" \
+            --body "ARL and SID have been updated on $(date -u '+%Y-%m-%d %H:%M UTC')"
