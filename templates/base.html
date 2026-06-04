@@ -12,7 +12,8 @@
     <style>
       h1 {
         font-family: 'Nunito', sans-serif;
-        font-size: 3.36rem;
+        font-size: clamp(1.4rem, 5.5vw, 3.36rem);
+        white-space: nowrap;
       }
       .dz-card {
         background: linear-gradient(180deg, #3d3d3d 0%, #1a3632 100%);
@@ -26,14 +27,14 @@
   <body class="p-3 mb-2 bg-dark text-white d-flex flex-column min-vh-100">
     <div class="container text-center flex-grow-1">
 
-      <div class="row justify-content-center m-5">
-        <div class="col-6">
+      <div class="row justify-content-center my-3 my-md-5">
+        <div class="col-auto">
           <h1>Deezer Service by Goujon</h1>
         </div>
       </div>
 
       <div class="row justify-content-center">
-        <div class="col-auto">
+        <div class="col-12 col-sm-auto">
           {% block content %}{% endblock %}
         </div>
       </div>
