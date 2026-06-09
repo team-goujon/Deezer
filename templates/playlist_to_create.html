@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Playlist preview - Deezer Service by Goujon{% endblock %}
 {% block content %}
-  <form action="#" method="post" class="dz-card m-2 px-5 py-3" style="min-width: 500px;">
+  <form action="#" method="post" class="dz-card m-2 px-2 px-sm-5 py-3 w-100">
     <div class="align-items-center mb-3">
       <h2>Playlist content <span class="badge bg-secondary fs-6 fw-normal">{{ tracks|length }} track{{ 's' if tracks|length > 1 }}</span></h2>
       <div class="overflow-y-auto" style="max-height: 50vh;">
