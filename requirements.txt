@@ -8,3 +8,4 @@ gunicorn==21.2.0
 pytest==9.0.2
 pytest-cov==7.1.0
 dotenv==0.9.9
+redis==7.4.0

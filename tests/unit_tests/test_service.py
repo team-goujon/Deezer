@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from service import DeezerService
-from utils.models import GoujonPlaylistModel
+from utils.models import GoujonPlaylistModel, ArtistModel
 from utils.exceptions import DeezerServiceError
 import pandas as pd
 
@@ -19,8 +19,6 @@ def playlist_to_create():
     return GoujonPlaylistModel(
         name="Test Playlist",
         public=False,
-        selected_artists=pd.DataFrame([]),
-        track_list=pd.DataFrame([])
     )
 
 
@@ -62,19 +60,19 @@ def make_mock_artist_data_songs(artist_id, tab=0):
 
 def mock_get_artist_data_related(artist_id, tab=1):
     data = [
-        {"ART_ID": i, "ART_NAME": f"Artist {i}", "ART_PICTURE": f"picture{i}.jpg"}
+        {"ART_ID": str(i), "ART_NAME": f"Artist {i}", "ART_PICTURE": f"picture{i}.jpg"}
         for i in range(4,7)
     ]
-    data = data[:4 - artist_id]  # Artist 1 has 3 related, Artist 2 has 2, Artist 3 has 1
+    data = data[:4 - int(artist_id)]  # Artist 1 has 3 related, Artist 2 has 2, Artist 3 has 1
     return {"RELATED_ARTISTS": {"data": data}}
 
 
-def test_create_playlist_favorites_without_relatives(service, playlist_to_create, favorites_options):
+def test_add_data_to_playlist_favorites_without_relatives(service, playlist_to_create, favorites_options):
     service.api.get_profile_data.return_value = {
         "TAB": {
             "artists": {
                 "data": [
-                    {"ART_ID": i, "ART_NAME": f"Artist {i}", "ART_PICTURE": f"picture{i}.jpg"}
+                    {"ART_ID": str(i), "ART_NAME": f"Artist {i}", "ART_PICTURE": f"picture{i}.jpg"}
                     for i in range(1, 6)
                 ]
             }
@@ -82,20 +80,20 @@ def test_create_playlist_favorites_without_relatives(service, playlist_to_create
     }
     service.api.get_artist_data.side_effect = make_mock_artist_data_songs
 
-    result = service.create_playlist(playlist_to_create, favorites_options)
+    result = service.add_data_to_playlist(playlist_to_create, favorites_options)
     assert isinstance(result, GoujonPlaylistModel)
-    assert result.selected_artists.shape[0] == 2
-    assert result.track_list.shape[0] == 6  # 3 artists (2 random artists + mety-k) x 2 tracks each
-    track_ids = result.track_list['SNG_ID'].apply(lambda x: x[-2:])
-    assert all((track_ids != '05') & (track_ids != '06'))  # Tracks filtrées : durée < 80s ou ART_ID différent
+    assert len(result.selected_artists) == 2
+    assert len(result.track_list) == 6  # 3 artists (2 random artists + mety-k) x 2 tracks each
+    track_ids = [t.SNG_ID[-2:] for t in result.track_list]
+    assert all(t_id not in ('05', '06') for t_id in track_ids) # Tracks filtrées : durée < 80s ou ART_ID différent
 
-def test_create_playlist_favorites_with_relatives(service, playlist_to_create, favorites_options):
+def test_add_data_to_playlist_favorites_with_relatives(service, playlist_to_create, favorites_options):
     favorites_options['include_relative'] = True
     service.api.get_profile_data.return_value = {
         "TAB": {
             "artists": {
                 "data": [
-                    {"ART_ID": i, "ART_NAME": f"Artist {i}", "ART_PICTURE": f"picture{i}.jpg"}
+                    {"ART_ID": str(i), "ART_NAME": f"Artist {i}", "ART_PICTURE": f"picture{i}.jpg"}
                     for i in range(1, 3)
                 ]
             }
@@ -108,17 +106,17 @@ def test_create_playlist_favorites_with_relatives(service, playlist_to_create, f
 
     service.api.get_artist_data.side_effect = combined_side_effect
 
-    result = service.create_playlist(playlist_to_create, favorites_options)
+    result = service.add_data_to_playlist(playlist_to_create, favorites_options)
     assert isinstance(result, GoujonPlaylistModel)
-    assert result.selected_artists.shape[0] == 4  # 2 selected + 2 related
-    assert result.track_list.shape[0] == 10  # 4 artists (2 selected + 2 related + mety-k) x 2 tracks each
+    assert len(result.selected_artists) == 4  # 2 selected + 2 related
+    assert len(result.track_list) == 10  # 4 artists (2 selected + 2 related + mety-k) x 2 tracks each
 
-def test_create_playlist_favorites_validation_error(service, playlist_to_create, favorites_options, validation_error):
+def test_add_data_to_playlist_favorites_validation_error(service, playlist_to_create, favorites_options, validation_error):
     service.api.get_profile_data.side_effect = validation_error
     with pytest.raises(DeezerServiceError):
-        service.create_playlist(playlist_to_create, favorites_options)
+        service.add_data_to_playlist(playlist_to_create, favorites_options)
 
-def test_create_playlist_with_no_tracks_found(service, playlist_to_create, validation_error):
+def test_add_data_to_playlist_with_no_tracks_found(service, playlist_to_create, validation_error):
     options = {
         'mode': 'Manual',
         'include_relative': False,
@@ -128,15 +126,15 @@ def test_create_playlist_with_no_tracks_found(service, playlist_to_create, valid
         "TAB": {
             "artists": {
                 "data": [
-                    {"ART_ID": 1, "ART_NAME": "Artist 1", "ART_PICTURE": "picture1.jpg"},
-                    {"ART_ID": 2, "ART_NAME": "Artist 2", "ART_PICTURE": "picture2.jpg"}
+                    {"ART_ID": "1", "ART_NAME": "Artist 1", "ART_PICTURE": "picture1.jpg"},
+                    {"ART_ID": "2", "ART_NAME": "Artist 2", "ART_PICTURE": "picture2.jpg"}
                 ]
             }
         }
     }
     service.api.get_artist_data.side_effect = validation_error
     with pytest.raises(DeezerServiceError):
-        service.create_playlist(playlist_to_create, options)
+        service.add_data_to_playlist(playlist_to_create, options)
 
 
 def test_set_artist_selection_favorites(service):
@@ -144,32 +142,30 @@ def test_set_artist_selection_favorites(service):
         "TAB": {
             "artists": {
                 "data": [
-                    {"ART_ID": 1, "ART_NAME": "Artist 1", "ART_PICTURE": "picture1.jpg"},
-                    {"ART_ID": 2, "ART_NAME": "Artist 2", "ART_PICTURE": "picture2.jpg"}
+                    {"ART_ID": "1", "ART_NAME": "Artist 1", "ART_PICTURE": "picture1.jpg"},
+                    {"ART_ID": "2", "ART_NAME": "Artist 2", "ART_PICTURE": "picture2.jpg"}
                 ]
             }
         }
     }
 
     result = service.set_artist_selection('Favorites')
-    assert isinstance(result, pd.DataFrame)
-    assert result.shape == (2, 3)
-    assert list(result.columns) == ['ART_ID', 'ART_NAME', 'ART_PICTURE']
+    assert len(result) == 2
+    assert isinstance(result[0],ArtistModel)
 
 
 def test_set_artist_selection_flow(service):
     service.api.get_user_flow.return_value = {
         "data": [
-            {"SNG_ID": 1, "SNG_TITLE": "Song 1", "ART_ID": 1, "ART_NAME": "Artist 1", "ALB_PICTURE": "picture1.jpg", "DURATION": 200},
-            {"SNG_ID": 2, "SNG_TITLE": "Song 2", "ART_ID": 2, "ART_NAME": "Artist 2", "ALB_PICTURE": "picture2.jpg", "DURATION": 180},
-            {"SNG_ID": 3, "SNG_TITLE": "Song 3", "ART_ID": 2, "ART_NAME": "Artist 2", "ALB_PICTURE": "picture2.jpg", "DURATION": 220}
+            {"SNG_ID": "1", "SNG_TITLE": "Song 1", "ART_ID": "1", "ART_NAME": "Artist 1", "ALB_PICTURE": "picture1.jpg", "DURATION": 200},
+            {"SNG_ID": "2", "SNG_TITLE": "Song 2", "ART_ID": "2", "ART_NAME": "Artist 2", "ALB_PICTURE": "picture2.jpg", "DURATION": 180},
+            {"SNG_ID": "3", "SNG_TITLE": "Song 3", "ART_ID": "2", "ART_NAME": "Artist 2", "ALB_PICTURE": "picture2.jpg", "DURATION": 220}
         ]
     }
 
     result = service.set_artist_selection('Flow')
-    assert isinstance(result, pd.DataFrame)
-    assert result.shape == (2, 3)
-    assert list(result.columns) == ['ART_ID', 'ART_NAME', 'ART_PICTURE']
+    assert len(result) == 2
+    assert isinstance(result[0],ArtistModel)
 
 
 def test_set_artist_selection_validation_error(service, validation_error):
@@ -199,7 +195,7 @@ def test_add_related_artists_no_related_found(service, validation_error):
 
 def test_add_related_artists_with_related_found(service):
     selected_artists = pd.DataFrame({
-        'ART_ID': [1, 2, 3],
+        'ART_ID': ['1', '2', '3'],
         'ART_NAME': ['Artist 1', 'Artist 2', 'Artist 3'],
         'ART_PICTURE': ['picture1.jpg', 'picture2.jpg', 'picture3.jpg']
     })
@@ -209,7 +205,7 @@ def test_add_related_artists_with_related_found(service):
     result = service._DeezerService__add_related_artists(selected_artists)
     assert isinstance(result, pd.DataFrame)
     assert result.shape[0] == 5
-    assert set(result['ART_ID']) == {1, 2, 3, 4, 5}
+    assert set(result['ART_ID']) == {'1', '2', '3', '4', '5'}
 
 
 def test_set_random_tracks_list_no_tracks_found(service, playlist_to_create, validation_error):

@@ -2,7 +2,7 @@ from service import DeezerService
 from service.api import DeezerAPI
 from flask import g
 from datetime import datetime
-from utils.models import GoujonPlaylistModel
+from utils.models import GoujonPlaylistModel, ArtistModel, SongModel
 import pandas as pd
 
 
@@ -14,18 +14,19 @@ def test_save_playlist_and_check_in_profile(flask_app, full_auth):
         playlist_to_create = GoujonPlaylistModel(
             name=playlist_name,
             public=False,
-            selected_artists=pd.DataFrame({
-                'ART_ID': [352227652],
-                'ART_NAME': ['Mety-K'],
-                'ART_PICTURE': ['9a1844bfe55e74f45d74463f80b2de60']
-            }),
-            track_list=pd.DataFrame({
-                'SNG_ID': [3615373702],
-                'SNG_TITLE': ['Stug'],
-                'ART_ID': [352227652],
-                'ART_NAME': ['Mety-K'],
-                'ART_PICTURE': ['9a1844bfe55e74f45d74463f80b2de60']
-            }),
+            selected_artists=[ArtistModel(
+                ART_ID = '352227652',
+                ART_NAME = 'Mety-K',
+                ART_PICTURE = '9a1844bfe55e74f45d74463f80b2de60'
+            )],
+            track_list=[SongModel(
+                SNG_ID = '3615373702',
+                SNG_TITLE = 'Stug',
+                DURATION = 235,
+                ART_ID = '352227652',
+                ART_NAME = 'Mety-K',
+                ART_PICTURE = '9a1844bfe55e74f45d74463f80b2de60'
+            )],
          )
         service = DeezerService()
         api = DeezerAPI()

@@ -1,15 +1,7 @@
-from pydantic import BaseModel, Field, ConfigDict
-import pandas as pd
+from pydantic import BaseModel, Field
 import logging
 logger = logging.getLogger(__name__)
 
-#Model for playlist create by service
-class GoujonPlaylistModel(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    name: str
-    public: bool
-    selected_artists: pd.DataFrame
-    track_list: pd.DataFrame
 
 # Models for artists data (used for favorite and related artists)
 class ArtistModel(BaseModel):
@@ -55,9 +47,10 @@ class GetLastPlaylistIdModel(BaseModel):
 class SongModel(BaseModel):
     SNG_ID: str
     SNG_TITLE: str
+    DURATION: int
     ART_ID: str
-    DURATION: str
     ART_NAME: str
+    ART_PICTURE: str | None = None
 
 # Also used for get_user_flow
 class ListSongModel(BaseModel):
@@ -71,6 +64,14 @@ class ListAlbumModel(BaseModel):
 
 class GetTracksByArtistModel(BaseModel):
     ALBUMS: ListAlbumModel
+
+
+#Model for playlist create by service
+class GoujonPlaylistModel(BaseModel):
+    name: str
+    public: bool
+    selected_artists: list[ArtistModel] = Field(default_factory=list)
+    track_list: list[SongModel] = Field(default_factory=list)
 
 
 deezer_validation_models = { 
