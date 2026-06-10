@@ -19,8 +19,7 @@ app.secret_key = os.getenv('SECRET_KEY', 'default_secret_key')
 app.config['SESSION_TYPE'] = 'redis'
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=60)
-app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_SERIALIZATION_FORMAT'] = 'pickle'          
+app.config['SESSION_USE_SIGNER'] = True     
 app.config['SESSION_REDIS'] = redis.from_url(os.getenv('REDIS_URL'))
 app.config.from_object(__name__)
 Session(app)
