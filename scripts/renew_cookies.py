@@ -3,11 +3,12 @@ try:
     load_dotenv()
 except ImportError:
     pass
-import undetected_chromedriver as uc
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+# import undetected_chromedriver as uc
+# from selenium.webdriver.common.by import By
+# from selenium.webdriver.support.ui import WebDriverWait
+# from selenium.webdriver.support import expected_conditions as EC
 import os
+import sys
 import requests
 import base64
 import nacl.public
@@ -46,48 +47,82 @@ token = os.getenv("GH_TOKEN")
 email = os.getenv("DEEZER_EMAIL")
 password = os.getenv("DEEZER_PWD")
 
-cookie_box = {}
+req = requests.Session()
+req.headers.update({
+    'User-Agent': 'Mozilla/5.0 (compatible)',
+    'Referer': 'https://www.deezer.com/',
+    'Origin': 'https://www.deezer.com',
+})
+payload = {
+    "api_version": "1.0",
+    "api_token": "",
+    "input": "3",
+    "method": "deezer.getUserData",
+}
 
-options = uc.ChromeOptions()
-options.add_argument("--no-sandbox")
-options.add_argument("--disable-dev-shm-usage")
-options.add_argument("--window-size=1920,1080")
-driver = uc.Chrome(options=options)
+resp = req.post("https://www.deezer.com/ajax/gw-light.php", params=payload)
+resp.raise_for_status()
 
-driver.get("https://account.deezer.com/fr/login/")
+results = resp.json()['results']
+checkform_login = results['checkFormLogin']
 
-wait = WebDriverWait(driver, 30)
+data = {
+    'type': 'login',
+    'mail': email,
+    'password': password,
+    'checkFormLogin': checkform_login,
+    'reCaptchaToken': ''
+}
+resp_login = req.post("https://www.deezer.com/ajax/action.php", data=data)
+resp_login.raise_for_status()
 
-try:
-    accept_btn = WebDriverWait(driver, 5).until(
-        EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Accepter')]"))
-    )
-    accept_btn.click()
-except:
-    pass
-
-try:
-    email_field = wait.until(EC.presence_of_element_located((By.ID, "email")))
-except:
-    driver.save_screenshot("debug.png")
-    raise
-password_field = wait.until(EC.presence_of_element_located((By.ID, "password")))
-email_field.send_keys(email)
-password_field.send_keys(password)
-
-connect_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-testid='login-button']")))
-connect_btn.click()
-wait.until(EC.url_changes("https://account.deezer.com/fr/login/"))
-
-for cookie in driver.get_cookies():
-    name = cookie.get("name")
-    if name in ("arl", "sid") and name not in cookie_box:
-        cookie_box[name] = cookie.get("value")
-
-type(driver).__del__ = lambda self: None #Bug de uc propre à windows
-driver.quit()
+if "success" not in resp_login.text:
+    print(f"Login failed: {resp_login.text}")
+    sys.exit(1)
 
 key, key_id = get_public_key(repo, token)
-update_github_secret(repo, token, "TEST_DEEZER_ARL", encrypt_secret(key, cookie_box["arl"]), key_id)
-update_github_secret(repo, token, "TEST_DEEZER_SID", encrypt_secret(key, cookie_box["sid"]), key_id)
+update_github_secret(repo, token, "TEST_DEEZER_ARL", encrypt_secret(key, req.cookies.get("arl")), key_id)
+update_github_secret(repo, token, "TEST_DEEZER_SID", encrypt_secret(key, req.cookies.get("sid")), key_id)
+
+# cookie_box = {}
+
+# options = uc.ChromeOptions()
+# options.add_argument("--no-sandbox")
+# options.add_argument("--disable-dev-shm-usage")
+# options.add_argument("--window-size=1920,1080")
+# driver = uc.Chrome(options=options)
+
+# driver.get("https://account.deezer.com/fr/login/")
+
+# wait = WebDriverWait(driver, 30)
+
+# try:
+#     accept_btn = WebDriverWait(driver, 5).until(
+#         EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Accepter')]"))
+#     )
+#     accept_btn.click()
+# except:
+#     pass
+
+# try:
+#     email_field = wait.until(EC.presence_of_element_located((By.ID, "email")))
+# except:
+#     driver.save_screenshot("debug.png")
+#     raise
+# password_field = wait.until(EC.presence_of_element_located((By.ID, "password")))
+# email_field.send_keys(email)
+# password_field.send_keys(password)
+
+# connect_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-testid='login-button']")))
+# connect_btn.click()
+# wait.until(EC.url_changes("https://account.deezer.com/fr/login/"))
+
+# for cookie in driver.get_cookies():
+#     name = cookie.get("name")
+#     if name in ("arl", "sid") and name not in cookie_box:
+#         cookie_box[name] = cookie.get("value")
+
+# type(driver).__del__ = lambda self: None #Bug de uc propre à windows
+# driver.quit()
+
 

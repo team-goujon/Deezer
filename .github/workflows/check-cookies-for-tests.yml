@@ -44,9 +44,7 @@ jobs:
 
       - name: Install renew dependencies
         if: steps.check_cookies.outcome == 'failure'
-        run: |
-          sudo apt-get install -y xvfb
-          pip install undetected-chromedriver selenium setuptools PyNaCl
+        run: pip install PyNaCl
 
       - name: Renew ARL and SID cookies if needed
         id: renew_cookies
@@ -55,7 +53,7 @@ jobs:
           DEEZER_EMAIL: ${{ secrets.TEST_DEEZER_EMAIL }}
           DEEZER_PWD: ${{ secrets.TEST_DEEZER_PWD }}
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-        run: xvfb-run python scripts/renew_cookies.py
+        run: python scripts/renew_cookies.py
 
       - name: Update README
         if: steps.check_cookies.outcome == 'failure' && steps.renew_cookies.outcome == 'success'
@@ -69,10 +67,3 @@ jobs:
           git add README.md
           git commit -m "chore: update cookie renewal date"
           git push
-
-      - name: Upload debug screenshot
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: debug-screenshots
-          path: "*.png"
