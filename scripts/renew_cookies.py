@@ -64,7 +64,9 @@ resp = req.post("https://www.deezer.com/ajax/gw-light.php", params=payload)
 resp.raise_for_status()
 
 results = resp.json()['results']
+print(f"Clés disponibles dans results: {list(results.keys())}")
 checkform_login = results['checkFormLogin']
+print(f"checkFormLogin: {checkform_login}")
 
 data = {
     'type': 'login',
@@ -76,6 +78,8 @@ data = {
 resp_login = req.post("https://www.deezer.com/ajax/action.php", data=data)
 resp_login.raise_for_status()
 
+print(f"Login response: {resp_login.text}")
+print(f"Login status: {resp_login.status_code}")
 if "success" not in resp_login.text:
     print(f"Login failed: {resp_login.text}")
     sys.exit(1)
