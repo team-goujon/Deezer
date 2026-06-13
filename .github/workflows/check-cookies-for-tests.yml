@@ -44,7 +44,9 @@ jobs:
 
       - name: Install renew dependencies
         if: steps.check_cookies.outcome == 'failure'
-        run: pip install undetected-chromedriver selenium setuptools PyNaCl
+        run: |
+          sudo apt-get install -y xvfb
+          pip install undetected-chromedriver selenium setuptools PyNaCl
 
       - name: Renew ARL and SID cookies if needed
         id: renew_cookies
@@ -53,7 +55,7 @@ jobs:
           DEEZER_EMAIL: ${{ secrets.TEST_DEEZER_EMAIL }}
           DEEZER_PWD: ${{ secrets.TEST_DEEZER_PWD }}
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-        run: python scripts/renew_cookies.py
+        run: xvfb-run python scripts/renew_cookies.py
 
       - name: Update README
         if: steps.check_cookies.outcome == 'failure' && steps.renew_cookies.outcome == 'success'
