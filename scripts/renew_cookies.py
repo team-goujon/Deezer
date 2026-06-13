@@ -51,7 +51,7 @@ cookie_box = {}
 
 driver = uc.Chrome()
 driver.get("https://account.deezer.com/fr/login/")
-wait = WebDriverWait(driver, 3)
+wait = WebDriverWait(driver, 15)
 
 try:
     accept_btn = WebDriverWait(driver, 5).until(
@@ -68,7 +68,7 @@ password_field.send_keys(password)
 
 connect_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-testid='login-button']")))
 connect_btn.click()
-time.sleep(3)
+wait.until(EC.url_changes("https://account.deezer.com/fr/login/"))
 
 for cookie in driver.get_cookies():
     name = cookie.get("name")
