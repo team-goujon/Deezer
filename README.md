@@ -276,11 +276,10 @@ In your repo, add these secrets:
 |--------|-------|---------|
 | `DEEZER_ARL` | Test Deezer ARL cookie | Integration + E2E tests |
 | `DEEZER_SID` | Test Deezer SID cookie | Integration + E2E tests |
-| `DEEZER EMAIL` | Test account login | Renew cookies workflow |
-| `DEEZER PWD` | Test account password | Renew cookies workflow | 
 | `FLY_API_TOKEN` | Fly.io API token | Auto-deploy workflow |
 
-<!-- last-cookie-renewal -->Last test cookies update : none
+**Find Deezer SID and DEEZER ARL**
+To find the cookie, you can run (locally) the script get_cookies.py, with `DEEZER_EMAIL` and `DEEZER_PWD` as local environment variables to print SID AND ARL in your terminal.
 
 **To create secrets:**
 1. Go to repo → Settings → Secrets and variables → Actions
