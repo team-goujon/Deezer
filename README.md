@@ -280,7 +280,7 @@ In your repo, add these secrets:
 | `DEEZER PWD` | Test account password | Renew cookies workflow | 
 | `FLY_API_TOKEN` | Fly.io API token | Auto-deploy workflow |
 
-<!-- last-cookie-renewal -->Dernière mise à jour des cookies de test : jamais
+<!-- last-cookie-renewal -->Last test cookies update : none
 
 **To create secrets:**
 1. Go to repo → Settings → Secrets and variables → Actions
