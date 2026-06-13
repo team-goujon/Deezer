@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, jsonify, render_template, request, redirect, url_for, session
 from flask_session import Session
 from datetime import timedelta
 from service import DeezerService
@@ -50,6 +50,21 @@ def login():
     if is_auth(session):
         return redirect(url_for('menu'))
     return render_template('login.html')
+
+@app.route('/login-via-extension', methods=['POST'])
+def login_via_extension():
+    data = request.get_json()
+    arl, sid = data.get('arl'), data.get('sid')
+    if not arl or not sid:
+        return jsonify({'ok': False, 'error': 'missing cookies'}), 400
+
+    auth_data = authenticate(arl, sid)
+    if not auth_data:
+        return jsonify({'ok': False, 'error': 'invalid cookies'}), 401
+
+    session['auth'] = auth_data
+    logger.info("User authenticated via extension")
+    return jsonify({'ok': True})
 
 @app.route('/logout', methods=['GET'])
 def logout():
