@@ -7,7 +7,6 @@ import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import time
 import os
 import requests
 import base64
@@ -49,7 +48,12 @@ password = os.getenv("DEEZER_PWD")
 
 cookie_box = {}
 
-driver = uc.Chrome()
+options = uc.ChromeOptions()
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
+options.add_argument("--window-size=1920,1080")
+driver = uc.Chrome(options=options)
+
 driver.get("https://account.deezer.com/fr/login/")
 wait = WebDriverWait(driver, 15)
 
