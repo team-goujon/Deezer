@@ -279,7 +279,8 @@ In your repo, add these secrets:
 | `FLY_API_TOKEN` | Fly.io API token | Auto-deploy workflow |
 
 **Find Deezer SID and DEEZER ARL:**
-To find the cookie, you can run (locally) the script get_cookies.py, with `DEEZER_EMAIL` and `DEEZER_PWD` as local environment variables to print SID AND ARL in your terminal.
+
+To find the cookie, you can locally run the script get_cookies.py, with `DEEZER_EMAIL` and `DEEZER_PWD` as local environment variables to print SID AND ARL in your terminal.
 
 **To create secrets:**
 1. Go to repo → Settings → Secrets and variables → Actions
