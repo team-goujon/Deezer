@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "TeamGoujon Deezer Login",
+  "version": "0.1.0",
+  "description": "Récupère les cookies Deezer pour TeamGoujon.net",
+  "permissions": ["cookies", "notifications"],
+  "host_permissions": [
+    "https://*.deezer.com/*",
+    "http://localhost:5000/*",
+    "https://teamgoujon.net/*"
+  ],
+  "action": {
+    "default_title": "Connecter à TeamGoujon",
+    "default_icon": {
+      "16": "icon-16.png",
+      "48": "icon-48.png",
+      "128": "icon-128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icon-16.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  }
+}
