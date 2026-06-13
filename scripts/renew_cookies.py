@@ -55,9 +55,8 @@ options.add_argument("--window-size=1920,1080")
 driver = uc.Chrome(options=options)
 
 driver.get("https://account.deezer.com/fr/login/")
-driver.save_screenshot("debug.png")
 
-wait = WebDriverWait(driver, 15)
+wait = WebDriverWait(driver, 30)
 
 try:
     accept_btn = WebDriverWait(driver, 5).until(
@@ -67,7 +66,11 @@ try:
 except:
     pass
 
-email_field = wait.until(EC.presence_of_element_located((By.ID, "email")))
+try:
+    email_field = wait.until(EC.presence_of_element_located((By.ID, "email")))
+except:
+    driver.save_screenshot("debug.png")
+    raise
 password_field = wait.until(EC.presence_of_element_located((By.ID, "password")))
 email_field.send_keys(email)
 password_field.send_keys(password)
