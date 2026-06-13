@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session
 from flask_session import Session
 from datetime import timedelta
 from service import DeezerService
-from utils.models import GoujonPlaylistModel
+from utils.models import GoujonPlaylistModel, ArtistModel
 from service.auth import is_auth, authenticate, require_auth
 from version import VERSION, RELEASE_DATE
 import logging
@@ -62,7 +62,7 @@ def menu():
     if request.method == 'POST':
         name = request.form.get('playlist_name', type=str)
         public = request.form.get('public_playlist') == 'on'
-        session['playlist_to_create'] = GoujonPlaylistModel(name=name, public=public)
+        session['playlist_to_create'] = GoujonPlaylistModel(name=name, public=public).model_dump_json()
         selection_mode = request.form['mode_selection']
         include_relative = request.form.get('related_artists') == 'on'
         playlist_options = {
@@ -73,10 +73,11 @@ def menu():
         }
         session['playlist_options'] = playlist_options
         if selection_mode == 'Favorites':
-            session['playlist_to_create'] = service.add_data_to_playlist(session['playlist_to_create'], playlist_options)
+            playlist = GoujonPlaylistModel.model_validate_json(session['playlist_to_create'])
+            session['playlist_to_create'] = service.add_data_to_playlist(playlist, playlist_options).model_dump_json()
             return redirect(url_for('playlist_to_create'))
         if selection_mode == 'Flow' or selection_mode == 'Manual':
-            session['artist_to_display'] = service.set_artist_selection(selection_mode)
+            session['artist_to_display'] = [a.model_dump() for a in service.set_artist_selection(selection_mode)]
             return redirect(url_for('artist_selection'))
         
     return render_template('menu.html')
@@ -84,7 +85,7 @@ def menu():
 @app.route('/playlist_to_create', methods=['GET', 'POST'])
 @require_auth
 def playlist_to_create():
-    playlist_to_create = session['playlist_to_create']
+    playlist_to_create = GoujonPlaylistModel.model_validate_json(session['playlist_to_create'])
     if request.method == 'POST':
         service.save_playlist_on_deezer_profile(playlist_to_create)
         return redirect(url_for('menu'))
@@ -96,11 +97,12 @@ def playlist_to_create():
 def artist_selection():
     if request.method == 'POST':
         selected_ids = request.form.getlist('artist_index')
-        session['playlist_to_create'].selected_artists = [a for a in session['artist_to_display'] if a.ART_ID in selected_ids]
-        session['playlist_to_create'] = service.add_data_to_playlist(session['playlist_to_create'], session['playlist_options'])
+        playlist = GoujonPlaylistModel.model_validate_json(session['playlist_to_create'])
+        artists_to_display = [ArtistModel.model_validate(a) for a in session['artist_to_display']]
+        playlist.selected_artists = [a for a in artists_to_display if a.ART_ID in selected_ids]
+        session['playlist_to_create'] = service.add_data_to_playlist(playlist, session['playlist_options']).model_dump_json()
         return redirect(url_for('playlist_to_create'))
-    artist_to_be_rendered = [a.model_dump() for a in session['artist_to_display']]
-    return render_template('artist_selection.html', artists=artist_to_be_rendered, mode=session['playlist_options']['mode'])
+    return render_template('artist_selection.html', artists=session['artist_to_display'], mode=session['playlist_options']['mode'])
 
 @app.route('/cancel', methods=['GET'])
 def cancel():
