@@ -54,6 +54,7 @@ req.headers.update({
     'Origin': 'https://www.deezer.com',
 })
 req.get("https://www.deezer.com/")
+print(f"Cookies après GET: {dict(req.cookies)}")
 
 payload = {
     "api_version": "1.0",
@@ -66,6 +67,10 @@ resp.raise_for_status()
 
 results = resp.json()['results']
 checkform_login = results['checkFormLogin']
+
+print(f"checkFormLogin: {checkform_login}")
+print(f"Email envoyé: {email}")
+print(f"Password défini: {'oui' if password else 'NON - variable vide!'}")
 
 data = {
     'type': 'login',
