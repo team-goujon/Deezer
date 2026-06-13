@@ -55,6 +55,8 @@ options.add_argument("--window-size=1920,1080")
 driver = uc.Chrome(options=options)
 
 driver.get("https://account.deezer.com/fr/login/")
+driver.save_screenshot("debug.png")
+
 wait = WebDriverWait(driver, 15)
 
 try:
