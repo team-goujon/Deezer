@@ -4,10 +4,15 @@ on:
   schedule:
     - cron: '0 0 * * *'
   workflow_dispatch:
+  push:
+    branches: [38-add-workflow-to-update-sid-and-arl-used-for-tests]
 
 jobs:
   check-cookies:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -29,6 +34,14 @@ jobs:
           DEEZER_SID: ${{ secrets.TEST_DEEZER_SID }}
         run: python scripts/check_cookies.py
           
+      - name: Generate a token
+        if: steps.check_cookies.outcome == 'failure'
+        id: generate-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Install renew dependencies
         if: steps.check_cookies.outcome == 'failure'
         run: pip install undetected-chromedriver selenium setuptools PyNaCl
@@ -39,14 +52,18 @@ jobs:
         env:
           DEEZER_EMAIL: ${{ secrets.TEST_DEEZER_EMAIL }}
           DEEZER_PWD: ${{ secrets.TEST_DEEZER_PWD }}
-          GH_PAT: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: python scripts/renew_cookies.py
 
-      - name: Notify cookies updated
+      - name: Update README
         if: steps.check_cookies.outcome == 'failure' && steps.renew_cookies.outcome == 'success'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh issue create \
-            --title "Deezer cookies renewed automatically" \
-            --body "ARL and SID have been updated on $(date -u '+%Y-%m-%d %H:%M UTC')"
+          DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
+          sed -i "s/<!-- last-cookie-renewal -->.*/<!-- last-cookie-renewal -->Dernière mise à jour : $DATE/" README.md
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "chore: update cookie renewal date"
+          git push

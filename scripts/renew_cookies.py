@@ -43,7 +43,7 @@ def update_github_secret(repo: str, token: str, secret_name: str, encrypted_valu
     print(f"Secret {secret_name} updated successfully.")
 
 repo = os.getenv("GITHUB_REPOSITORY")
-token = os.getenv("GH_PAT")
+token = os.getenv("GH_TOKEN")
 email = os.getenv("DEEZER_EMAIL")
 password = os.getenv("DEEZER_PWD")
 

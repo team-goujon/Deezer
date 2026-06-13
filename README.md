@@ -276,7 +276,11 @@ In your repo, add these secrets:
 |--------|-------|---------|
 | `DEEZER_ARL` | Test Deezer ARL cookie | Integration + E2E tests |
 | `DEEZER_SID` | Test Deezer SID cookie | Integration + E2E tests |
+| `DEEZER EMAIL` | Test account login | Renew cookies workflow |
+| `DEEZER PWD` | Test account password | Renew cookies workflow | 
 | `FLY_API_TOKEN` | Fly.io API token | Auto-deploy workflow |
+
+<!-- last-cookie-renewal -->Dernière mise à jour des cookies de test : jamais
 
 **To create secrets:**
 1. Go to repo → Settings → Secrets and variables → Actions
