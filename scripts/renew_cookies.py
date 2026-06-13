@@ -53,20 +53,19 @@ req.headers.update({
     'Referer': 'https://www.deezer.com/',
     'Origin': 'https://www.deezer.com',
 })
+req.get("https://www.deezer.com/")
+
 payload = {
     "api_version": "1.0",
     "api_token": "",
     "input": "3",
     "method": "deezer.getUserData",
 }
-
 resp = req.post("https://www.deezer.com/ajax/gw-light.php", params=payload)
 resp.raise_for_status()
 
 results = resp.json()['results']
-print(f"Clés disponibles dans results: {list(results.keys())}")
 checkform_login = results['checkFormLogin']
-print(f"checkFormLogin: {checkform_login}")
 
 data = {
     'type': 'login',
