@@ -27,7 +27,11 @@ service = DeezerService()
 
 @app.context_processor
 def inject_app_metadata():
-    return {'app_version': VERSION, 'app_date': RELEASE_DATE}
+    return {
+        'app_version': VERSION,
+        'app_date': RELEASE_DATE,
+        'chrome_store_url': os.getenv('CHROME_STORE_URL'),
+    }
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
