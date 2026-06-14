@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Login - Deezer Service by Goujon{% endblock %}
 {% block content %}
-  <div class="dz-card m-2 px-3 px-md-5 py-3">
+  <div class="dz-card m-2 px-3 px-md-5 py-3" style="width: 500px; max-width: 100%;">
     <!-- Error message if present -->
     {% if error %}
       <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -9,62 +9,84 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
       </div>
     {% endif %}
-    
-    <h5>Enter Your Deezer Cookies</h5>  
-    <!-- Instructions -->
-    <div class="alert alert-info mb-3" role="alert">
-      <ol class="mb-0 small text-start">
-        <li>Open <a href="https://www.deezer.com" target="_blank">Deezer.com</a> in your browser</li>
-        <li>Log in to your Deezer account</li>
-        <li>Open Developer Tools (Press <code>F12</code> or <code>Ctrl+Shift+I</code>)</li>
-        <li>Go to the <strong>Application</strong> tab (or <strong>Storage</strong> in Firefox)</li>
-        <li>Under <strong>Cookies</strong>, select <strong>https://www.deezer.com</strong></li>
-        <li>Find and copy the <code>arl</code> cookie value</li>
-        <li>Find and copy the <code>sid</code> cookie value</li>
-        <li>Paste them in the form below</li>
-      </ol>
-    </div>
-    
-    <!-- Cookie form -->
-    <form method="post" action="{{ url_for('login') }}">
-      <div class="mb-3">
-        <div class="mb-3">
-          <label for="arl" class="form-label">
-            Cookie <code>arl</code><span class="text-danger">*</span>
-          </label>
-          <textarea 
-            class="form-control" 
-            id="arl" 
-            name="arl" 
-            placeholder="Paste your 'arl' cookie value here"
-            rows="5"
-            style="resize: none;"
-            required
-          ></textarea>
-        </div>
-        
-        <div class="mb-3">
-          <label for="sid" class="form-label">
-            Cookie <code>sid</code> <span class="text-danger">*</span>
-          </label>
-          <textarea 
-            class="form-control" 
-            id="sid" 
-            name="sid" 
-            placeholder="Paste your 'sid' cookie value here"
-            rows="1"
-            style="resize: none;"
-            required
-          ></textarea>
-        </div>
-        
-        <div class="mb-3">
-          <div class="col text-center"></div>
-            <button type="submit" class="btn btn-primary"><i class="bi bi-box-arrow-in-right me-1"></i>Authenticate</button>
-          </div>
+
+    <!-- Primary path: browser extension -->
+    <h5><i class="bi bi-puzzle-fill me-1"></i>One-click login (recommended)</h5>
+    <div class="mt-3">
+      <div class="alert alert-success mb-3" role="alert">
+        <ol class="mb-0 small text-start">
+          <li>Install the TeamGoujon extension (once)</li>
+          <li>Open and log into <a href="https://www.deezer.com" target="_blank" rel="noopener">Deezer.com</a></li>
+          <li>Click the TeamGoujon icon in your browser toolbar</li>
+        </ol>
+        <div class="d-flex flex-wrap gap-2 justify-content-center mt-3">
+          <a href="{{ chrome_store_url or '#' }}" target="_blank" rel="noopener" class="btn btn-success btn-sm">
+            <i class="bi bi-browser-chrome me-1"></i>Add to Chrome
+          </a>
+          <button type="button" class="btn btn-secondary btn-sm" disabled>
+            <i class="bi bi-browser-firefox me-1"></i>Firefox - Coming soon
+          </button>
         </div>
       </div>
-    </form>
+    </div>
+
+    <!-- Fallback path: manual cookie paste -->
+    <details class="mb-2">
+      <summary class="h5" style="cursor: pointer;">
+        or paste cookies manually (advanced)
+      </summary>
+      <div class="mt-3">
+        <div class="alert alert-info mb-3" role="alert">
+          <ol class="mb-0 small text-start">
+            <li>Open <a href="https://www.deezer.com" target="_blank" rel="noopener">Deezer.com</a> in your browser</li>
+            <li>Log in to your Deezer account</li>
+            <li>Open Developer Tools (Press <code>F12</code> or <code>Ctrl+Shift+I</code>)</li>
+            <li>Go to the <strong>Application</strong> tab (or <strong>Storage</strong> in Firefox)</li>
+            <li>Under <strong>Cookies</strong>, select <strong>https://www.deezer.com</strong></li>
+            <li>Find and copy the <code>arl</code> cookie value</li>
+            <li>Find and copy the <code>sid</code> cookie value</li>
+            <li>Paste them in the form below</li>
+          </ol>
+        </div>
+
+        <form method="post" action="{{ url_for('login') }}">
+          <div class="mb-3">
+            <label for="arl" class="form-label">
+              Cookie <code>arl</code><span class="text-danger">*</span>
+            </label>
+            <textarea
+              class="form-control"
+              id="arl"
+              name="arl"
+              placeholder="Paste your 'arl' cookie value here"
+              rows="5"
+              style="resize: none;"
+              required
+            ></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label for="sid" class="form-label">
+              Cookie <code>sid</code> <span class="text-danger">*</span>
+            </label>
+            <textarea
+              class="form-control"
+              id="sid"
+              name="sid"
+              placeholder="Paste your 'sid' cookie value here"
+              rows="1"
+              style="resize: none;"
+              required
+            ></textarea>
+          </div>
+
+          <div class="mb-3 text-center">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-box-arrow-in-right me-1"></i>Authenticate
+            </button>
+          </div>
+        </form>
+      </div>
+    </details>
   </div>
 {% endblock %}
-   
