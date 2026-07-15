@@ -1,18 +1,30 @@
-console.log('[TG] background.js loaded');
+let isDev = false;
+let baseUrl = 'https://teamgoujon.net';
+
+const logInfo = (...args) => { if (isDev) console.log('[TG]', ...args); };
+const logWarn = (...args) => { if (isDev) console.warn('[TG]', ...args); };
+const logError = (...args) => { if (isDev) console.error('[TG]', ...args); };
+
+const ready = chrome.management.getSelf().then((info) => {
+  isDev = info.installType === 'development';
+  baseUrl = isDev ? 'http://localhost:5000' : 'https://teamgoujon.net';
+  logInfo('background.js loaded, installType:', info.installType, '→ baseUrl:', baseUrl);
+});
 
 chrome.action.onClicked.addListener(async (tab) => {
-  console.log('[TG] icon clicked, tab url:', tab?.url);
+  await ready;
+  logInfo('icon clicked, tab url:', tab?.url);
 
   const url = 'https://www.deezer.com';
 
   const arlCookie = await chrome.cookies.get({ url, name: 'arl' });
   const sidCookie = await chrome.cookies.get({ url, name: 'sid' });
-  
+
   const arl = arlCookie?.value;
   const sid = sidCookie?.value;
-  
+
   if (!arl || !sid) {
-    console.warn('[TG] missing cookie(s), aborting');
+    logWarn('missing cookie(s), aborting');
     chrome.notifications.create({
       type: 'basic', iconUrl: 'icon-128.png', title: 'TeamGoujon',
       message: 'Connecte-toi à Deezer d\'abord.'
@@ -20,13 +32,8 @@ chrome.action.onClicked.addListener(async (tab) => {
     return;
   }
 
-  const { installType } = await chrome.management.getSelf();
-  const baseUrl = installType === 'development'
-    ? 'http://localhost:5000'
-    : 'https://teamgoujon.net';
-  console.log('[TG] installType:', installType, '→ baseUrl:', baseUrl);
   const endpoint = `${baseUrl}/login-via-extension`;
-  console.log('[TG] POST →', endpoint);
+  logInfo('POST →', endpoint);
 
   try {
     const r = await fetch(endpoint, {
@@ -34,7 +41,7 @@ chrome.action.onClicked.addListener(async (tab) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ arl, sid })
     });
-    console.log('[TG] response status:', r.status, r.statusText);
+    logInfo('response status:', r.status, r.statusText);
 
     if (r.ok) {
       chrome.tabs.create({ url: baseUrl });
@@ -45,7 +52,7 @@ chrome.action.onClicked.addListener(async (tab) => {
       });
     }
   } catch (e) {
-    console.error('[TG] fetch threw:', e);
+    logError('fetch threw:', e);
     chrome.notifications.create({
       type: 'basic', iconUrl: 'icon-128.png', title: 'TeamGoujon',
       message: 'Erreur : ' + e.message

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "TeamGoujon Deezer Login",
+  "name": "TeamGoujon Music Connector",
   "version": "0.1.0",
-  "description": "Récupère les cookies Deezer pour TeamGoujon.net",
+  "description": "Permet de connecter son compte musical à TeamGoujon.net",
   "permissions": ["cookies", "notifications"],
   "host_permissions": [
     "https://*.deezer.com/*",
