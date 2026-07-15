@@ -70,6 +70,10 @@ def login_via_extension():
     logger.info("User authenticated via extension")
     return jsonify({'ok': True})
 
+@app.route('/privacy', methods=['GET'])
+def privacy():
+    return render_template('privacy.html')
+
 @app.route('/logout', methods=['GET'])
 def logout():
     session.clear()
