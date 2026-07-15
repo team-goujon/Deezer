@@ -1,0 +1,99 @@
+name: Release Chrome Extension
+run-name: Release Chrome Extension v${{ github.event.inputs.version }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Extension version to build (e.g. 1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # Authenticate as the Team Goujon GitHub App so the bump commit and tag
+      # are attributed to the app rather than a personal account.
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Bump manifest version, commit and tag
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          set -euo pipefail
+          TAG="ext-v${VERSION}"
+
+          # Fail early if the tag already exists (avoids a confusing push error).
+          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            echo "::error::Tag ${TAG} already exists"
+            exit 1
+          fi
+
+          # Persist the version bump in the repo manifest — localhost stays here
+          # for dev; it is only stripped from the packaged zip further below.
+          jq --arg v "$VERSION" '.version = $v' extensions/chrome/manifest.json > manifest.tmp.json
+          mv manifest.tmp.json extensions/chrome/manifest.json
+
+          # Attribute the commit to the app bot (numeric id gives the right avatar
+          # and links the commit to the app).
+          BOT_NAME="${APP_SLUG}[bot]"
+          BOT_ID="$(gh api "/users/${BOT_NAME}" --jq .id)"
+          git config user.name "$BOT_NAME"
+          git config user.email "${BOT_ID}+${BOT_NAME}@users.noreply.github.com"
+
+          git add extensions/chrome/manifest.json
+          git commit -m "Bump chrome extension to v${VERSION} [skip ci]"
+          git tag "$TAG"
+          git push origin HEAD
+          git push origin "$TAG"
+
+      - name: Build production manifest (strip dev-only localhost)
+        working-directory: extensions/chrome
+        run: |
+          jq '.host_permissions = [.host_permissions[] | select(startswith("http://localhost") | not)]' \
+            manifest.json > manifest.prod.json
+          mv manifest.prod.json manifest.json
+          echo "--- Production manifest ---"
+          cat manifest.json
+
+      - name: Package extension
+        run: |
+          cd extensions/chrome
+          zip -r "$GITHUB_WORKSPACE/teamgoujon-chrome-extension-${{ github.event.inputs.version }}.zip" . -x "*.md"
+          cd "$GITHUB_WORKSPACE"
+          ls -lh teamgoujon-chrome-extension-*.zip
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: teamgoujon-chrome-extension-${{ github.event.inputs.version }}
+          path: teamgoujon-chrome-extension-${{ github.event.inputs.version }}.zip
+
+      # --- Phase 2: automatic publish to the Chrome Web Store (unlisted) ---
+      # Enable once the CWS developer account and API credentials exist.
+      # Add these repo secrets (Settings → Secrets and variables → Actions):
+      #   CWS_EXTENSION_ID, CWS_CLIENT_ID, CWS_CLIENT_SECRET, CWS_REFRESH_TOKEN
+      # See: https://github.com/mnao305/chrome-extension-upload
+      #
+      # - name: Publish to Chrome Web Store
+      #   uses: mnao305/chrome-extension-upload@v5.0.0
+      #   with:
+      #     file-path: teamgoujon-chrome-extension-${{ github.event.inputs.version }}.zip
+      #     extension-id: ${{ secrets.CWS_EXTENSION_ID }}
+      #     client-id: ${{ secrets.CWS_CLIENT_ID }}
+      #     client-secret: ${{ secrets.CWS_CLIENT_SECRET }}
+      #     refresh-token: ${{ secrets.CWS_REFRESH_TOKEN }}
+      #     publish: true

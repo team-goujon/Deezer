@@ -199,6 +199,73 @@ App deployed, users see v1.1.0 with release date
 
 ---
 
+## Chrome Extension Release
+
+The Chrome extension lives in [extensions/chrome/](extensions/chrome/). It is
+**not** released through GitHub Releases (that list is reserved for the webapp).
+Instead, the build is triggered manually and the packaged zip lives as a workflow
+artifact; the Chrome Web Store is the real version registry once auto-publish is
+enabled.
+
+### Dev vs prod
+
+- **Dev:** load `extensions/chrome/` unpacked in Chrome. `installType` is
+  `development`, so `background.js` targets `http://localhost:5000` and prints
+  `[TG]` debug logs.
+- **Prod:** once installed from the Chrome Web Store, `installType` is no longer
+  `development`, so the backend automatically becomes `https://teamgoujon.net`
+  and debug logs are silenced. No manual flag flipping.
+
+On each run the `release-extension.yml` workflow:
+1. Bumps `.version` in `extensions/chrome/manifest.json`, **commits it** (authored
+   by the Team Goujon GitHub App), and pushes a `ext-v<version>` **tag** — this is
+   the version history, no GitHub Release involved.
+2. Packages a production zip in which the dev-only `http://localhost:5000/*` host
+   permission is stripped (the committed manifest keeps it for local dev).
+
+**Required repo config** (Settings → Secrets and variables → Actions):
+
+| Name | Kind | Value |
+|------|------|-------|
+| `APP_CLIENT_ID` | Variable | The Team Goujon GitHub App client ID (`Iv23...`) |
+| `APP_PRIVATE_KEY` | Secret | The app's private key (PEM contents) |
+
+The app needs "Contents: Read and write" permission and must be installed on the
+repo. If the default branch is protected, allow the app to bypass it.
+
+### How to build a release zip
+
+1. Merge extension changes to `main`.
+2. Go to **Actions → Release Chrome Extension → Run workflow**, enter the version
+   (e.g. `1.0.0`), and run it.
+3. The workflow commits the bump + pushes tag `ext-v1.0.0`.
+4. Download the `teamgoujon-chrome-extension-<version>` artifact from the run page.
+
+No GitHub Release is created and no Fly.io deploy is triggered. The bump commit
+carries `[skip ci]` so it doesn't trigger the webapp test workflows.
+
+### First publication (one-time, manual)
+
+1. Create a Chrome Web Store developer account (one-time $5 fee):
+   https://chrome.google.com/webstore/devconsole
+2. Download the zip artifact from the workflow run.
+3. New item → upload the zip → fill the listing (description, ≥1 screenshot
+   1280×800), set **Visibility → Unlisted**.
+4. Privacy policy URL: `https://teamgoujon.net/privacy` — justify each
+   permission (`cookies`, `notifications`, host permissions).
+5. Submit for review.
+6. After approval, copy the store URL into the `CHROME_STORE_URL` env var so the
+   login page links to it.
+
+### Enabling automatic Chrome Web Store publishing (phase 2)
+
+Uncomment the "Publish to Chrome Web Store" step in `release-extension.yml` and
+add these repo secrets: `CWS_EXTENSION_ID`, `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET`,
+`CWS_REFRESH_TOKEN`. From then on, each manual run publishes the new version and
+the Chrome Web Store holds the version history.
+
+---
+
 ## Fly.io Setup
 
 ### Initial Setup (One-time)
