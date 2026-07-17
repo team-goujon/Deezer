@@ -79,12 +79,12 @@ class DeezerAPI:
     
     @with_auth
     @data_validation
-    def get_profile_data(self, auth: dict, tab: str, nb: int = 100) -> dict:
+    def get_profile_data(self, auth: dict, tab: str, nb: int = -1) -> dict:
         logger.debug(f"Getting profile data for tab: {tab} with nb: {nb}")
         body = {
             'user_id': auth.get("user_id"),
             'tab': tab,
-            'nb': nb
+            'total': nb
         }
         results = self.__get_api("deezer.pageProfile", body)
         return results
@@ -156,4 +156,29 @@ class DeezerAPI:
             "playlist_id": str(playlist_id)
         }
         results = self.__get_api("playlist.delete", body)
+        pass
+
+    def get_playlist_infos(self, playlist_id: int, nb: int = -1):
+        body = {
+            "playlist_id": str(playlist_id),
+            'nb': nb
+        }
+        results = self.__get_api("deezer.pagePlaylist", body)
+        return results
+    
+    def delete_songs_from_playlist(self, playlist_id: int, songs_list: list):
+        body = {
+            "playlist_id": str(playlist_id),
+            "songs": songs_list, #[[song_id,0]]
+        }
+        results = self.__get_api("playlist.deleteSongs", body)
+        pass
+
+    def update_song_order_in_playlist(self, playlist_id: int, songs_list: list):
+        body = {
+            "playlist_id": str(playlist_id),
+            "order": songs_list,
+            "position": "0"
+        }
+        results = self.__get_api("playlist.updateOrder", body)
         pass

@@ -44,7 +44,7 @@ class DeezerService:
             raise DeezerServiceError(str(e))
 
     def save_playlist_on_deezer_profile(self, playlist_to_create: GoujonPlaylistModel):
-        self.api.create_playlist(name=playlist_to_create.name, description="GoujonPlayslit", public=playlist_to_create.public)
+        self.api.create_playlist(name=playlist_to_create.name, description="GoujonPlaylist", public=playlist_to_create.public)
         playlist_id = self.__get_last_playlist_id()
         track_df = pd.DataFrame([t.model_dump() for t in playlist_to_create.track_list])
         track_list = track_df['SNG_ID'].drop_duplicates().to_list()
@@ -52,6 +52,81 @@ class DeezerService:
         self.api.add_songs_to_playlist(track_list_formated, playlist_id)
         pass
 
+    def get_all_playlists(self, user_id: str) -> list[dict]:
+        try:
+            data = self.api.get_profile_data(tab='playlists')
+            user_playlists = data['TAB']['playlists']['data']
+            editable_playlists = []
+            for playlist in user_playlists:
+                if playlist.get('PARENT_USER_ID') == user_id:
+                    editable_playlists.append({
+                        'id': playlist.get('PLAYLIST_ID'),
+                        'name': playlist.get('TITLE'),
+                        'nb_song': playlist.get('NB_SONG'),
+                        'public': playlist.get('STATUS') == 0,
+                        'playlist_picture': playlist.get('PLAYLIST_PICTURE'),
+                    })
+            return editable_playlists
+        except ValidationError as e:
+            logger.error(f"{e.__class__.__name__}: {e.title} - {e.error_count()} error(s)")
+            raise DeezerServiceError("Failed to retrieve or validate user's playlists")
+        
+    def load_playlist(self, playlist_id: str) -> GoujonPlaylistModel:
+        try:
+            original_playlist = self.api.get_playlist_infos(playlist_id)
+            title = original_playlist['DATA']['TITLE']
+            public = original_playlist['DATA']['STATUS'] == 0
+            original_songs = pd.DataFrame(original_playlist['SONGS']['data'])
+            original_songs = original_songs[['SNG_ID', 'SNG_TITLE', 'DURATION', 'ART_ID', 'ART_NAME', 'ALB_PICTURE']]
+            original_songs = original_songs.rename(columns={"ALB_PICTURE": "ART_PICTURE"})
+            playlist_to_edit = GoujonPlaylistModel(id=playlist_id, name=title, public=public, track_list=[SongModel(**row) for row in original_songs.to_dict('records')])
+            return playlist_to_edit
+        except ValidationError as e:
+            logger.error(f"{e.__class__.__name__}: {e.title} - {e.error_count()} error(s)")
+            raise DeezerServiceError("Failed to retrieve or validate playlist songs")
+        
+    def delete_song_from_playlist(self, playlist: GoujonPlaylistModel, song_id: int) -> GoujonPlaylistModel:
+        try:
+            track_list = [t for t in playlist.track_list if t.SNG_ID != song_id]
+            playlist.track_list = track_list
+            self.api.delete_songs_from_playlist(playlist.id, [[song_id, 0]])
+            return playlist
+        except Exception as e:
+            logger.error(f"Failed to delete songs from playlist: {e}")
+            raise DeezerServiceError("Failed to delete songs from playlist")
+        
+    def replace_song_in_playlist(self, playlist: GoujonPlaylistModel, artist_id: str, song_id: int) -> GoujonPlaylistModel:
+        try:
+            artist_tracks = self.__get_tracks_by_artist(artist_id)
+            existing_song_ids = {t.SNG_ID for t in playlist.track_list if t.ART_ID == artist_id}
+            artist_tracks = artist_tracks[~artist_tracks['SNG_ID'].isin(existing_song_ids)]
+            if artist_tracks.empty:
+                raise DeezerServiceError(f"No tracks found for artist ID {artist_id}")
+            new_song = artist_tracks.sample(n=1).iloc[0]
+            new_song_id = new_song['SNG_ID']
+            new_track_list = [SongModel(**new_song.to_dict()) if t.SNG_ID == song_id else t for t in playlist.track_list]
+            ordered_songs_ids = [t.SNG_ID for t in new_track_list]
+            playlist.track_list = new_track_list
+            self.api.delete_songs_from_playlist(playlist.id, [[song_id, 0]])
+            self.api.add_songs_to_playlist([[new_song_id, 0]], playlist.id)
+            self.api.update_song_order_in_playlist(playlist.id, ordered_songs_ids)
+            return playlist
+        except Exception as e:
+            logger.error(f"Failed to replace song in playlist: {e}")
+            raise DeezerServiceError("Failed to replace song in playlist")
+
+    def replace_all_songs(self, playlist: GoujonPlaylistModel) -> GoujonPlaylistModel:
+        try:
+            track_list = playlist.track_list
+            for song in track_list:
+                artist_id = song.ART_ID
+                song_id = song.SNG_ID
+                playlist = self.replace_song_in_playlist(playlist, artist_id, song_id)
+            return playlist
+        except Exception as e:
+            logger.error(f"Failed to replace all songs in playlist: {e}")
+            raise DeezerServiceError("Failed to replace all songs in playlist")
+        
 
     # @debugging
     def __get_user_favorites_artists(self) -> pd.DataFrame:

@@ -42,6 +42,8 @@ class TabHomeModel(BaseModel):
 class GetLastPlaylistIdModel(BaseModel):
     TAB: TabHomeModel
 
+class GetAllPlaylistsModel(BaseModel):
+    TAB: AllPlaylistModel
 
 # Models to get album songs information
 class SongModel(BaseModel):
@@ -68,6 +70,7 @@ class GetTracksByArtistModel(BaseModel):
 
 #Model for playlist create by service
 class GoujonPlaylistModel(BaseModel):
+    id: str | None = None
     name: str
     public: bool
     selected_artists: list[ArtistModel] = Field(default_factory=list)
@@ -79,6 +82,7 @@ deezer_validation_models = {
     ('get_artist_data','1'): GetRelatedArtistsModel,
     ('get_profile_data','artists'): GetUserFavoritesArtistsModel,
     ('get_profile_data','home'): GetLastPlaylistIdModel,
+    ('get_profile_data','playlists'): GetAllPlaylistsModel,
     ('get_user_flow',''): ListSongModel,
     ('get_playlist_songs',''): ListSongModel,
 }

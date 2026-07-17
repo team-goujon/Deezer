@@ -12,7 +12,7 @@ config_dict = {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'standard',
-            'level': logging.INFO,
+            'level': logging.DEBUG,
         },
         'file': {
             'class': 'logging.FileHandler',
@@ -24,7 +24,7 @@ config_dict = {
     'loggers': {
         '': {  # root logger
             'handlers': ['console'],
-            'level': logging.INFO,
+            'level': logging.DEBUG,
             'propagate': False
         },
         'service.api': {
@@ -34,7 +34,7 @@ config_dict = {
         },
         'service': {
                 'handlers': ['console'],
-                'level': logging.INFO,
+                'level': logging.DEBUG,
                 'propagate': False
         },
         'selenium': {
