@@ -73,6 +73,7 @@ class DeezerService:
         
     def load_playlist(self, playlist_id: str) -> GoujonPlaylistModel:
         try:
+            logger.debug(f"Loading playlist with ID: {playlist_id} - type: {type(playlist_id)}")
             original_playlist = self.api.get_playlist_infos(playlist_id)
             title = original_playlist['DATA']['TITLE']
             public = original_playlist['DATA']['STATUS'] == 0
@@ -85,7 +86,7 @@ class DeezerService:
             logger.error(f"{e.__class__.__name__}: {e.title} - {e.error_count()} error(s)")
             raise DeezerServiceError("Failed to retrieve or validate playlist songs")
         
-    def delete_song_from_playlist(self, playlist: GoujonPlaylistModel, song_id: int) -> GoujonPlaylistModel:
+    def delete_song_from_playlist(self, playlist: GoujonPlaylistModel, song_id: str) -> GoujonPlaylistModel:
         try:
             track_list = [t for t in playlist.track_list if t.SNG_ID != song_id]
             playlist.track_list = track_list
@@ -95,7 +96,7 @@ class DeezerService:
             logger.error(f"Failed to delete songs from playlist: {e}")
             raise DeezerServiceError("Failed to delete songs from playlist")
         
-    def replace_song_in_playlist(self, playlist: GoujonPlaylistModel, artist_id: str, song_id: int) -> GoujonPlaylistModel:
+    def replace_song_in_playlist(self, playlist: GoujonPlaylistModel, artist_id: str, song_id: str) -> GoujonPlaylistModel:
         try:
             artist_tracks = self.__get_tracks_by_artist(artist_id)
             existing_song_ids = {t.SNG_ID for t in playlist.track_list if t.ART_ID == artist_id}
@@ -199,9 +200,8 @@ class DeezerService:
 
     def __get_last_playlist_id(self) -> str:
         try:
-            data = self.api.get_profile_data(tab='home')
-            user_playlists = data['TAB']['home']['playlists']
-            last_playlist = user_playlists['data'][0]
+            data = self.api.get_profile_data(tab='playlists')
+            last_playlist = data['TAB']['playlists']['data'][0]
             return last_playlist['PLAYLIST_ID']
         except ValidationError as e:
             logger.error(f"{e.__class__.__name__}: {e.title} - {e.error_count()} error(s)")

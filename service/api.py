@@ -158,6 +158,7 @@ class DeezerAPI:
         results = self.__get_api("playlist.delete", body)
         pass
 
+    @data_validation
     def get_playlist_infos(self, playlist_id: int, nb: int = -1):
         body = {
             "playlist_id": str(playlist_id),

@@ -26,24 +26,24 @@ class GetUserFavoritesArtistsModel(BaseModel):
     TAB: TabArtistsModel
 
 
-# Models to get playlist id
+# Models to get all playlists
 class PlaylistModel(BaseModel):
+    PARENT_USER_ID: str
     PLAYLIST_ID: str
+    TITLE: str
+    NB_SONG: int
+    STATUS: int
+    PLAYLIST_PICTURE: str | None = None
 
 class ListPlaylistModel(BaseModel):
     data: list[PlaylistModel] = Field(..., min_length=1)
 
-class AllPlaylistModel(BaseModel):
+class TabPlaylistModel(BaseModel):
     playlists: ListPlaylistModel
 
-class TabHomeModel(BaseModel):
-    home: AllPlaylistModel
+class GetPlaylistsModel(BaseModel):
+    TAB: TabPlaylistModel
 
-class GetLastPlaylistIdModel(BaseModel):
-    TAB: TabHomeModel
-
-class GetAllPlaylistsModel(BaseModel):
-    TAB: AllPlaylistModel
 
 # Models to get album songs information
 class SongModel(BaseModel):
@@ -68,6 +68,16 @@ class GetTracksByArtistModel(BaseModel):
     ALBUMS: ListAlbumModel
 
 
+#Models to get playlist songs information
+class PlaylistDataDetailsModel(BaseModel):
+    TITLE: str
+    STATUS: int
+
+class PlaylistDataModel(BaseModel):
+    DATA: PlaylistDataDetailsModel
+    SONGS: ListSongModel
+
+
 #Model for playlist create by service
 class GoujonPlaylistModel(BaseModel):
     id: str | None = None
@@ -81,10 +91,10 @@ deezer_validation_models = {
     ('get_artist_data','0'): GetTracksByArtistModel,
     ('get_artist_data','1'): GetRelatedArtistsModel,
     ('get_profile_data','artists'): GetUserFavoritesArtistsModel,
-    ('get_profile_data','home'): GetLastPlaylistIdModel,
-    ('get_profile_data','playlists'): GetAllPlaylistsModel,
+    ('get_profile_data','playlists'): GetPlaylistsModel,
     ('get_user_flow',''): ListSongModel,
     ('get_playlist_songs',''): ListSongModel,
+    ('get_playlist_infos',''): PlaylistDataModel
 }
 
 def data_validation(func):
