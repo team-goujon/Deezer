@@ -3,7 +3,8 @@
 {% block content %}
   <form action="#" method="post" class="dz-card m-3 px-3 px-sm-5 py-4 w-100">
     <div class="align-items-center mb-3">
-      <h2>Playlist content <span class="badge bg-secondary fs-6 fw-normal">{{ tracks|length }} track{{ 's' if tracks|length > 1 }}</span></h2>
+      <h2 class="fs-2 mb-3">{{ playlist_title }}</h2>
+      <h3 class="fs-4 fw-normal mb-3">Playlist content <span class="badge bg-secondary fs-6 fw-normal">{{ tracks|length }} track{{ 's' if tracks|length > 1 }}</span></h3>
       <div class="overflow-y-auto" style="max-height: 50vh;">
         <table class="table align-middle table-hover">
           <tbody>
@@ -28,13 +29,10 @@
     </div>
     <div class="row align-items-center mt-4 mb-2">
       <div class="col text-center">
-        <a class="btn btn-danger" href="{{ url_for('cancel') }}"><i class="bi bi-x-circle me-1"></i>Cancel</a>
+        <a class="btn btn-danger" href="{{ url_for('cancel') }}"><i class="bi bi-x-circle me-1"></i>Back to menu</a>
       </div>
       <div class="col text-center">
-        <button name="action" value="all_songs_replace" type="submit" class="btn btn-success"><i class="bi bi-shuffle me-1"></i>Replace All Songs</button>
-      </div>
-      <div class="col text-center">
-        <button name="action" value="save" type="submit" class="btn btn-primary"><i class="bi bi-cloud-upload me-1"></i>Save on Deezer</button>
+        <button name="action" value="all_songs_replace" type="submit" class="btn btn-primary"><i class="bi bi-shuffle me-1"></i>Replace All Songs</button>
       </div>
     </div>
   </form>

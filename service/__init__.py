@@ -86,17 +86,18 @@ class DeezerService:
             logger.error(f"{e.__class__.__name__}: {e.title} - {e.error_count()} error(s)")
             raise DeezerServiceError("Failed to retrieve or validate playlist songs")
         
-    def delete_song_from_playlist(self, playlist: GoujonPlaylistModel, song_id: str) -> GoujonPlaylistModel:
+    def delete_song_from_playlist(self, playlist: GoujonPlaylistModel, song_id: str, editing_playlist: bool = False) -> GoujonPlaylistModel:
         try:
             track_list = [t for t in playlist.track_list if t.SNG_ID != song_id]
             playlist.track_list = track_list
-            self.api.delete_songs_from_playlist(playlist.id, [[song_id, 0]])
+            if editing_playlist:
+                self.api.delete_songs_from_playlist(playlist.id, [[song_id, 0]])
             return playlist
         except Exception as e:
             logger.error(f"Failed to delete songs from playlist: {e}")
             raise DeezerServiceError("Failed to delete songs from playlist")
         
-    def replace_song_in_playlist(self, playlist: GoujonPlaylistModel, artist_id: str, song_id: str) -> GoujonPlaylistModel:
+    def replace_song_in_playlist(self, playlist: GoujonPlaylistModel, artist_id: str, song_id: str, editing_playlist: bool = False) -> GoujonPlaylistModel:
         try:
             artist_tracks = self.__get_tracks_by_artist(artist_id)
             existing_song_ids = {t.SNG_ID for t in playlist.track_list if t.ART_ID == artist_id}
@@ -108,9 +109,10 @@ class DeezerService:
             new_track_list = [SongModel(**new_song.to_dict()) if t.SNG_ID == song_id else t for t in playlist.track_list]
             ordered_songs_ids = [t.SNG_ID for t in new_track_list]
             playlist.track_list = new_track_list
-            self.api.delete_songs_from_playlist(playlist.id, [[song_id, 0]])
-            self.api.add_songs_to_playlist([[new_song_id, 0]], playlist.id)
-            self.api.update_song_order_in_playlist(playlist.id, ordered_songs_ids)
+            if editing_playlist:
+                self.api.delete_songs_from_playlist(playlist.id, [[song_id, 0]])
+                self.api.add_songs_to_playlist([[new_song_id, 0]], playlist.id)
+                self.api.update_song_order_in_playlist(playlist.id, ordered_songs_ids)
             return playlist
         except Exception as e:
             logger.error(f"Failed to replace song in playlist: {e}")
@@ -122,7 +124,7 @@ class DeezerService:
             for song in track_list:
                 artist_id = song.ART_ID
                 song_id = song.SNG_ID
-                playlist = self.replace_song_in_playlist(playlist, artist_id, song_id)
+                playlist = self.replace_song_in_playlist(playlist, artist_id, song_id, editing_playlist=True)
             return playlist
         except Exception as e:
             logger.error(f"Failed to replace all songs in playlist: {e}")
