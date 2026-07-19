@@ -36,7 +36,7 @@ def test_get_user_data_with_valid_cookies(flask_app, full_auth):
     assert result["api_token"] == full_auth["api_token"]
 
 
-@pytest.mark.parametrize("tab,key", [("artists", "artists"), ("home", "home")])
+@pytest.mark.parametrize("tab,key", [("artists", "artists"), ("playlists", "playlists")])
 def test_get_profile_data_with_valid_cookies(flask_app, full_auth, tab, key):
     with flask_app.app_context():
         g.auth = full_auth
@@ -99,10 +99,10 @@ def test_create_playlist_check_in_profile(flask_app, full_auth):
         ts = datetime.now().strftime("%Y%m%d%H%M%S")
         playlist_name = f'test_integration_api_{ts}'
         api.create_playlist(playlist_name, "desc", False)
-        profile = api.get_profile_data(tab='home')
-        titles = [p["TITLE"] for p in profile["TAB"]["home"]["playlists"]["data"]]
+        playlists = api.get_profile_data(tab='playlists')
+        titles = [p["TITLE"] for p in playlists["TAB"]["playlists"]["data"]]
         assert playlist_name in titles, "La playlist créée n'apparaît pas dans le profil de l'utilisateur"
-        playlist_id = profile["TAB"]["home"]["playlists"]["data"][0]["PLAYLIST_ID"]
+        playlist_id = playlists["TAB"]["playlists"]["data"][0]["PLAYLIST_ID"]
         api.delete_playlist(playlist_id)  # Nettoyage : supprimer la playlist après le test 
 
 def test_add_songs_to_playlist_and_check_in_profile(flask_app, full_auth):
@@ -112,8 +112,8 @@ def test_add_songs_to_playlist_and_check_in_profile(flask_app, full_auth):
         ts = datetime.now().strftime("%Y%m%d%H%M%S")
         playlist_name = f'test_integration_api2_{ts}'
         api.create_playlist(playlist_name, "desc", False)
-        profile = api.get_profile_data(tab='home')
-        playlist_id = profile["TAB"]["home"]["playlists"]["data"][0]["PLAYLIST_ID"]
+        playlists = api.get_profile_data(tab='playlists')
+        playlist_id = playlists["TAB"]["playlists"]["data"][0]["PLAYLIST_ID"]
         api.add_songs_to_playlist([[3135556, 0]], playlist_id)  # Ajouter "Harder, Better, Faster, Stronger" de Daft Punk
         songs = api.get_playlist_songs(playlist_id)
         song_ids = [s["SNG_ID"] for s in songs['data']]
