@@ -106,7 +106,7 @@ def test_create_playlist_check_in_profile(flask_app, full_auth):
         api.delete_playlist(playlist_id)  # Nettoyage : supprimer la playlist après le test 
 
 
-def test_add_delete_updateorder_songs_to_playlist_and_check_in_profile(flask_app, full_auth):
+def test_playlist_song_management(flask_app, full_auth):
     with flask_app.app_context():
         g.auth = full_auth
         api = DeezerAPI()

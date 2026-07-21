@@ -1,8 +1,9 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from service import DeezerService
-from utils.models import GoujonPlaylistModel, ArtistModel
+from utils.models import GoujonPlaylistModel, ArtistModel, SongModel
 from utils.exceptions import DeezerServiceError
+from pydantic import ValidationError
 import pandas as pd
 
 
@@ -19,6 +20,19 @@ def playlist_to_create():
     return GoujonPlaylistModel(
         name="Test Playlist",
         public=False,
+    )
+
+
+@pytest.fixture
+def playlist_to_create_with_songs():
+    return GoujonPlaylistModel(
+        name="Test Playlist",
+        public=False,
+        track_list=[
+            SongModel(SNG_ID="song_1", SNG_TITLE="Song 1", ART_ID="art_1", ART_NAME="Artist 1", DURATION=200),
+            SongModel(SNG_ID="song_2", SNG_TITLE="Song 2", ART_ID="art_2", ART_NAME="Artist 2", DURATION=180),
+            SongModel(SNG_ID="song_3", SNG_TITLE="Song 3", ART_ID="art_3", ART_NAME="Artist 3", DURATION=220),
+        ]
     )
 
 
@@ -54,6 +68,18 @@ def make_mock_artist_data_songs(artist_id, tab=0):
                 {"SNG_ID": f"{artist_id}_06", "SNG_TITLE": f"Song 6 of {artist_id}",
                  "ART_ID": f"{artist_id}_bis", "ART_NAME": f"Artist {artist_id}",
                  "ART_PICTURE": f"pic{artist_id}.jpg", "DURATION": "90"},
+            ]}
+        }]}
+    }
+
+def make_mock_artist_data_songs_for_replace(artist_id):
+    index = int(artist_id.split("_")[-1])  # Extract the number from the artist_id
+    return {
+        "ALBUMS": {"data": [{
+            "SONGS": {"data": [
+                {"SNG_ID": f"song_{index+3}", "SNG_TITLE": f"New song of {artist_id}",
+                 "ART_ID": artist_id, "ART_NAME": f"Artist {artist_id}",
+                 "ART_PICTURE": f"pic{artist_id}.jpg", "DURATION": "200"},
             ]}
         }]}
     }
@@ -153,7 +179,6 @@ def test_set_artist_selection_favorites(service):
     assert len(result) == 2
     assert isinstance(result[0],ArtistModel)
 
-
 def test_set_artist_selection_flow(service):
     service.api.get_user_flow.return_value = {
         "data": [
@@ -166,7 +191,6 @@ def test_set_artist_selection_flow(service):
     result = service.set_artist_selection('Flow')
     assert len(result) == 2
     assert isinstance(result[0],ArtistModel)
-
 
 def test_set_artist_selection_validation_error(service, validation_error):
     service.api.get_profile_data.side_effect = validation_error
@@ -191,7 +215,6 @@ def test_add_related_artists_no_related_found(service, validation_error):
     result = service._DeezerService__add_related_artists(selected_artists)
     assert isinstance(result, pd.DataFrame)
     assert result.equals(selected_artists)
-
 
 def test_add_related_artists_with_related_found(service):
     selected_artists = pd.DataFrame({
@@ -225,3 +248,143 @@ def test_get_last_playlist_id_no_playlists(service, validation_error):
     service.api.get_profile_data.side_effect = validation_error
     with pytest.raises(DeezerServiceError, match="Failed to retrieve or validate user's playlists"):
         service._DeezerService__get_last_playlist_id()
+
+
+def test_get_all_playlists(service):
+    
+    def mock_get_all_playlists(user_id):
+        data = [
+            {'PARENT_USER_ID': user_id, "PLAYLIST_ID": f"id_{i}", "TITLE": f"Playlist {i}", "NB_SONG": 3, "STATUS": 1, "PLAYLIST_PICTURE": f"picture{i}.jpg"}
+            for i in range(3)
+        ]
+        data.append({'PARENT_USER_ID': "other_user", "PLAYLIST_ID": f"id_{3}", "TITLE": f"Playlist {3}", "NB_SONG": 3, "STATUS": 1, "PLAYLIST_PICTURE": f"picture{3}.jpg"})
+        return {"TAB": {"playlists": {"data": data}}}
+
+    service.api.get_profile_data.return_value = mock_get_all_playlists('user123')
+    result = service.get_all_playlists('user123')
+    assert isinstance(result, list)
+    assert len(result) == 3
+    assert all(isinstance(p, dict) for p in result)
+
+def test_get_all_playlists_validation_error(service, validation_error):
+    service.api.get_profile_data.side_effect = validation_error
+    with pytest.raises(DeezerServiceError):
+        service.get_all_playlists('user123')
+
+
+def test_load_playlist(service):
+    service.api.get_playlist_infos.return_value = {
+                "DATA": {
+                    "TITLE": "Valid Playlist",
+                    "STATUS": 1
+                },
+                "SONGS": {
+                    "data": [
+                        {"SNG_ID": "1", "SNG_TITLE": "Song 1", "ART_ID": "1", "ART_NAME": "Artist 1", "ALB_PICTURE": "picture1.jpg", "DURATION": 200},
+                        {"SNG_ID": "2", "SNG_TITLE": "Song 2", "ART_ID": "2", "ART_NAME": "Artist 2", "ALB_PICTURE": "picture2.jpg", "DURATION": 180}
+                    ]
+                }
+            }
+
+    result = service.load_playlist("valid_playlist")
+    assert isinstance(result, GoujonPlaylistModel)
+    assert len(result.track_list) == 2
+    assert all(isinstance(track, SongModel) for track in result.track_list)
+
+def test_load_playlist_validation_error(service, validation_error):
+    service.api.get_playlist_infos.side_effect = validation_error
+    with pytest.raises(DeezerServiceError):
+        service.load_playlist("invalid_playlist")
+
+
+def test_delete_song_from_playlist_creation(service, playlist_to_create_with_songs):
+    playlist = playlist_to_create_with_songs.model_copy()
+    song_to_delete = playlist.track_list[0]
+    playlist = service.delete_song_from_playlist(playlist, song_to_delete.SNG_ID)
+
+    assert isinstance(playlist, GoujonPlaylistModel)
+    assert len(playlist.track_list) == len(playlist_to_create_with_songs.track_list) - 1
+    assert all(track.SNG_ID != song_to_delete.SNG_ID for track in playlist.track_list)
+    service.api.delete_songs_from_playlist.assert_not_called()
+
+def test_delete_song_from_playlist_editing(service, playlist_to_create_with_songs):
+    playlist = playlist_to_create_with_songs.model_copy()
+    song_to_delete = playlist.track_list[0]
+    playlist = service.delete_song_from_playlist(playlist, song_to_delete.SNG_ID, editing_playlist=True)
+
+    assert isinstance(playlist, GoujonPlaylistModel)
+    assert len(playlist.track_list) == len(playlist_to_create_with_songs.track_list) - 1
+    assert all(track.SNG_ID != song_to_delete.SNG_ID for track in playlist.track_list)
+    service.api.delete_songs_from_playlist.assert_called_once_with(playlist.id, [["song_1", 0]])
+
+def test_delete_song_from_playlist_error(service, playlist_to_create_with_songs):
+    service.api.delete_songs_from_playlist.side_effect = Exception("API error")
+    with pytest.raises(DeezerServiceError):
+        service.delete_song_from_playlist(playlist_to_create_with_songs, "song_1", editing_playlist=True)
+
+
+def test_replace_song_in_playlist_creation(service, playlist_to_create_with_songs):
+    playlist = playlist_to_create_with_songs.model_copy()
+    service.api.get_artist_data.return_value = make_mock_artist_data_songs_for_replace("art_1")
+    playlist = service.replace_song_in_playlist(playlist, artist_id="art_1", song_id="song_1")
+
+    assert isinstance(playlist, GoujonPlaylistModel)
+    assert len(playlist.track_list) == len(playlist_to_create_with_songs.track_list)
+    assert all(track.SNG_ID != "song_1" for track in playlist.track_list)
+    assert [track.SNG_ID for track in playlist.track_list] == ["song_4", "song_2", "song_3"]
+    service.api.delete_songs_from_playlist.assert_not_called()
+    service.api.add_songs_to_playlist.assert_not_called()
+    service.api.update_song_order_in_playlist.assert_not_called()
+
+def test_replace_song_in_playlist_editing(service, playlist_to_create_with_songs):
+    playlist = playlist_to_create_with_songs.model_copy()
+    service.api.get_artist_data.return_value = make_mock_artist_data_songs_for_replace("art_1")
+    playlist = service.replace_song_in_playlist(playlist, artist_id="art_1", song_id="song_1", editing_playlist=True)
+
+    assert isinstance(playlist, GoujonPlaylistModel)
+    assert len(playlist.track_list) == len(playlist_to_create_with_songs.track_list)
+    assert all(track.SNG_ID != "song_1" for track in playlist.track_list)
+    assert [track.SNG_ID for track in playlist.track_list] == ["song_4", "song_2", "song_3"]
+    service.api.delete_songs_from_playlist.assert_called_once_with(playlist.id, [["song_1", 0]])
+    service.api.add_songs_to_playlist.assert_called_once_with([["song_4", 0]], playlist.id)
+    service.api.update_song_order_in_playlist.assert_called_once_with(playlist.id, ["song_4", "song_2", "song_3"])
+
+def test_replace_song_in_playlist_no_alternative_tracks(service, playlist_to_create_with_songs):
+    playlist = playlist_to_create_with_songs.model_copy()
+    service.api.get_artist_data.return_value = make_mock_artist_data_songs_for_replace("art_1")
+    playlist.track_list.append(SongModel(SNG_ID="song_4", SNG_TITLE="Song 4", ART_ID="art_1", ART_NAME="Artist 1", DURATION=200))
+    result_playlist = service.replace_song_in_playlist(playlist, artist_id="art_1", song_id="song_1", editing_playlist=True)
+
+    assert isinstance(result_playlist, GoujonPlaylistModel)
+    assert playlist == playlist_to_create_with_songs 
+    service.api.delete_songs_from_playlist.assert_not_called()
+    service.api.add_songs_to_playlist.assert_not_called()
+    service.api.update_song_order_in_playlist.assert_not_called()
+
+def test_replace_song_in_playlist_error(service, playlist_to_create_with_songs):
+    service.api.delete_songs_from_playlist.side_effect = Exception("API error")
+    with pytest.raises(DeezerServiceError):
+        service.replace_song_in_playlist(playlist_to_create_with_songs, artist_id="art_1", song_id="song_1", editing_playlist=True)
+
+
+def test_replace_all_songs(service, playlist_to_create_with_songs):
+    playlist = playlist_to_create_with_songs.model_copy()
+    def mock_get_artist_data(artist_id, tab=0):
+        return make_mock_artist_data_songs_for_replace(artist_id)
+    service.api.get_artist_data.side_effect = mock_get_artist_data
+    playlist = service.replace_all_songs(playlist)
+
+    assert isinstance(playlist, GoujonPlaylistModel)
+    assert len(playlist.track_list) == len(playlist_to_create_with_songs.track_list)
+    assert all(track.SNG_ID != "song_1" for track in playlist.track_list)
+    assert all(track.SNG_ID != "song_2" for track in playlist.track_list)
+    assert all(track.SNG_ID != "song_3" for track in playlist.track_list)
+    assert [track.SNG_ID for track in playlist.track_list] == ["song_4", "song_5", "song_6"]
+    assert service.api.delete_songs_from_playlist.call_count == 3
+    assert service.api.add_songs_to_playlist.call_count == 3
+    assert service.api.update_song_order_in_playlist.call_count == 3
+
+def test_replace_all_songs_error(service, playlist_to_create_with_songs):
+    service.api.delete_songs_from_playlist.side_effect = Exception("API error")
+    with pytest.raises(DeezerServiceError):
+        service.replace_all_songs(playlist_to_create_with_songs)

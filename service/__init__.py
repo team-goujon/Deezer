@@ -103,7 +103,8 @@ class DeezerService:
             existing_song_ids = {t.SNG_ID for t in playlist.track_list if t.ART_ID == artist_id}
             artist_tracks = artist_tracks[~artist_tracks['SNG_ID'].isin(existing_song_ids)]
             if artist_tracks.empty:
-                raise DeezerServiceError(f"No tracks found for artist ID {artist_id}")
+                logger.info(f"No alternative tracks found for artist {artist_id}. Keeping the original song.")
+                return playlist
             new_song = artist_tracks.sample(n=1).iloc[0]
             new_song_id = new_song['SNG_ID']
             new_track_list = [SongModel(**new_song.to_dict()) if t.SNG_ID == song_id else t for t in playlist.track_list]
