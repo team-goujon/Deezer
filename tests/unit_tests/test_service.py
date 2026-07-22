@@ -369,6 +369,7 @@ def test_replace_song_in_playlist_error(service, playlist_to_create_with_songs):
 
 def test_replace_all_songs(service, playlist_to_create_with_songs):
     playlist = playlist_to_create_with_songs.model_copy()
+    playlist.track_list.append(SongModel(SNG_ID="song_extra", SNG_TITLE="Song Extra", ART_ID="art_1", ART_NAME="Artist 1", DURATION=200))
     def mock_get_artist_data(artist_id, tab=0):
         return make_mock_artist_data_songs_for_replace(artist_id)
     service.api.get_artist_data.side_effect = mock_get_artist_data
@@ -379,7 +380,7 @@ def test_replace_all_songs(service, playlist_to_create_with_songs):
     assert all(track.SNG_ID != "song_1" for track in playlist.track_list)
     assert all(track.SNG_ID != "song_2" for track in playlist.track_list)
     assert all(track.SNG_ID != "song_3" for track in playlist.track_list)
-    assert [track.SNG_ID for track in playlist.track_list] == ["song_4", "song_5", "song_6"]
+    assert [track.SNG_ID for track in playlist.track_list] == ["song_4", "song_5", "song_6", "song_extra"]
     service.api.delete_songs_from_playlist.assert_called_once_with(playlist.id, [["song_1", 0], ["song_2", 0], ["song_3", 0]])
     service.api.add_songs_to_playlist.assert_called_once_with(playlist.id, [["song_4", 0], ["song_5", 0], ["song_6", 0]])
 
