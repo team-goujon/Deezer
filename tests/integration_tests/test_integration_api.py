@@ -115,7 +115,7 @@ def test_playlist_song_management(flask_app, full_auth):
         api.create_playlist(playlist_name, "desc", False)
         playlists = api.get_profile_data(tab='playlists')
         playlist_id = playlists["TAB"]["playlists"]["data"][0]["PLAYLIST_ID"]
-        api.add_songs_to_playlist([[3135556, 0], [134831006, 0], [54519711, 0]], playlist_id)  # Ajouter "Harder, Better, Faster, Stronger" de Daft Punk
+        api.add_songs_to_playlist(playlist_id, [[3135556, 0], [134831006, 0], [54519711, 0]])  # Ajouter "Harder, Better, Faster, Stronger" de Daft Punk
         songs = api.get_playlist_songs(playlist_id)
         song_ids = [s["SNG_ID"] for s in songs['data']]
         assert '134831006' in song_ids, "Une chanson ajoutée n'apparaît pas dans la playlist"

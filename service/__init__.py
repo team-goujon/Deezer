@@ -49,7 +49,7 @@ class DeezerService:
         track_df = pd.DataFrame([t.model_dump() for t in playlist_to_create.track_list])
         track_list = track_df['SNG_ID'].drop_duplicates().to_list()
         track_list_formated = [[t,0] for t in track_list]
-        self.api.add_songs_to_playlist(track_list_formated, playlist_id)
+        self.api.add_songs_to_playlist(playlist_id, track_list_formated)
         pass
 
     def get_all_playlists(self, user_id: str) -> list[dict]:
@@ -101,18 +101,17 @@ class DeezerService:
         try:
             artist_tracks = self.__get_tracks_by_artist(artist_id)
             existing_song_ids = {t.SNG_ID for t in playlist.track_list if t.ART_ID == artist_id}
-            artist_tracks = artist_tracks[~artist_tracks['SNG_ID'].isin(existing_song_ids)]
-            if artist_tracks.empty:
+            new_song = self.__find_artist_new_song(artist_tracks, existing_song_ids)
+            if new_song is None:
                 logger.info(f"No alternative tracks found for artist {artist_id}. Keeping the original song.")
                 return playlist
-            new_song = artist_tracks.sample(n=1).iloc[0]
             new_song_id = new_song['SNG_ID']
             new_track_list = [SongModel(**new_song.to_dict()) if t.SNG_ID == song_id else t for t in playlist.track_list]
-            ordered_songs_ids = [t.SNG_ID for t in new_track_list]
             playlist.track_list = new_track_list
             if editing_playlist:
                 self.api.delete_songs_from_playlist(playlist.id, [[song_id, 0]])
-                self.api.add_songs_to_playlist([[new_song_id, 0]], playlist.id)
+                self.api.add_songs_to_playlist(playlist.id, [[new_song_id, 0]])
+                ordered_songs_ids = [t.SNG_ID for t in new_track_list]
                 self.api.update_song_order_in_playlist(playlist.id, ordered_songs_ids)
             return playlist
         except Exception as e:
@@ -122,10 +121,32 @@ class DeezerService:
     def replace_all_songs(self, playlist: GoujonPlaylistModel) -> GoujonPlaylistModel:
         try:
             track_list = playlist.track_list
+            new_track_list = track_list.copy()
+            artists_all_tracks = {}
+            tracks_to_delete = []
+            tracks_to_add = []
             for song in track_list:
                 artist_id = song.ART_ID
+                if artist_id in artists_all_tracks:
+                    artist_tracks = artists_all_tracks[artist_id]
+                else:
+                    artist_tracks = self.__get_tracks_by_artist(artist_id)
+                    artists_all_tracks[artist_id] = artist_tracks
                 song_id = song.SNG_ID
-                playlist = self.replace_song_in_playlist(playlist, artist_id, song_id, editing_playlist=True)
+
+                existing_song_ids = {t.SNG_ID for t in new_track_list if t.ART_ID == artist_id}
+                new_song = self.__find_artist_new_song(artist_tracks, existing_song_ids)
+                if new_song is None:
+                    continue
+                tracks_to_delete.append(song_id)
+                new_song_id = new_song['SNG_ID']
+                tracks_to_add.append(new_song_id)
+                new_track_list = [SongModel(**new_song.to_dict()) if t.SNG_ID == song_id else t for t in new_track_list]
+            playlist.track_list = new_track_list
+            self.api.delete_songs_from_playlist(playlist.id, [[t,0] for t in tracks_to_delete])
+            self.api.add_songs_to_playlist(playlist.id, [[t,0] for t in tracks_to_add])
+            ordered_songs_ids = [t.SNG_ID for t in new_track_list]
+            self.api.update_song_order_in_playlist(playlist.id, ordered_songs_ids)
             return playlist
         except Exception as e:
             logger.error(f"Failed to replace all songs in playlist: {e}")
@@ -222,3 +243,10 @@ class DeezerService:
         artists_df = flow_df[['ART_ID', 'ART_NAME', 'ALB_PICTURE']].drop_duplicates().reset_index(drop=True)
         artists_df = artists_df.rename(columns={"ALB_PICTURE": "ART_PICTURE"})
         return artists_df
+
+    def __find_artist_new_song(self, artist_tracks: pd.DataFrame, existing_song_ids: list):
+            artist_tracks = artist_tracks[~artist_tracks['SNG_ID'].isin(existing_song_ids)]
+            if artist_tracks.empty:
+                return None
+            return artist_tracks.sample(n=1).iloc[0]
+    

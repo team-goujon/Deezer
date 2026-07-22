@@ -346,7 +346,7 @@ def test_replace_song_in_playlist_editing(service, playlist_to_create_with_songs
     assert all(track.SNG_ID != "song_1" for track in playlist.track_list)
     assert [track.SNG_ID for track in playlist.track_list] == ["song_4", "song_2", "song_3"]
     service.api.delete_songs_from_playlist.assert_called_once_with(playlist.id, [["song_1", 0]])
-    service.api.add_songs_to_playlist.assert_called_once_with([["song_4", 0]], playlist.id)
+    service.api.add_songs_to_playlist.assert_called_once_with(playlist.id, [["song_4", 0]])
     service.api.update_song_order_in_playlist.assert_called_once_with(playlist.id, ["song_4", "song_2", "song_3"])
 
 def test_replace_song_in_playlist_no_alternative_tracks(service, playlist_to_create_with_songs):
@@ -380,9 +380,8 @@ def test_replace_all_songs(service, playlist_to_create_with_songs):
     assert all(track.SNG_ID != "song_2" for track in playlist.track_list)
     assert all(track.SNG_ID != "song_3" for track in playlist.track_list)
     assert [track.SNG_ID for track in playlist.track_list] == ["song_4", "song_5", "song_6"]
-    assert service.api.delete_songs_from_playlist.call_count == 3
-    assert service.api.add_songs_to_playlist.call_count == 3
-    assert service.api.update_song_order_in_playlist.call_count == 3
+    service.api.delete_songs_from_playlist.assert_called_once_with(playlist.id, [["song_1", 0], ["song_2", 0], ["song_3", 0]])
+    service.api.add_songs_to_playlist.assert_called_once_with(playlist.id, [["song_4", 0], ["song_5", 0], ["song_6", 0]])
 
 def test_replace_all_songs_error(service, playlist_to_create_with_songs):
     service.api.delete_songs_from_playlist.side_effect = Exception("API error")

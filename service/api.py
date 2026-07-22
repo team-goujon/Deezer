@@ -130,7 +130,7 @@ class DeezerAPI:
         results = self.__get_api("playlist.create", body)
         pass
 
-    def add_songs_to_playlist(self, songs_list: list, playlist_id: int):
+    def add_songs_to_playlist(self, playlist_id: int, songs_list: list):
         body = {
             "playlist_id": str(playlist_id),
             "songs": songs_list,
