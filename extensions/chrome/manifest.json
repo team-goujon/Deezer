@@ -1,9 +1,12 @@
 {
   "manifest_version": 3,
   "name": "TeamGoujon Music Connector",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Permet de connecter son compte musical à TeamGoujon.net",
-  "permissions": ["cookies", "notifications"],
+  "permissions": [
+    "cookies",
+    "notifications"
+  ],
   "host_permissions": [
     "https://*.deezer.com/*",
     "http://localhost:5000/*",
