@@ -32,9 +32,23 @@
         <a class="btn btn-danger" href="{{ url_for('cancel') }}"><i class="bi bi-x-circle me-1"></i>Back to menu</a>
       </div>
       <div class="col text-center">
-        <button name="action" value="all_songs_replace" type="submit" class="btn btn-primary"><i class="bi bi-shuffle me-1"></i>Replace All Songs</button>
+        <button id="replace-all-btn" name="action" value="all_songs_replace" type="submit" class="btn btn-primary"><i class="bi bi-shuffle me-1"></i>Replace All Songs</button>
       </div>
     </div>
   </form>
+
+  <div id="loading-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:9999; flex-direction:column; align-items:center; justify-content:center;">
+    <div class="spinner-border text-info mb-3" role="status" style="width:3rem; height:3rem;"></div>
+    <p class="text-white fs-5 mb-1">Replacing all songs...</p>
+    <p class="text-white-50 small">This may take a moment for large playlists.</p>
+  </div>
+{% endblock %}
+{% block scripts %}
+<script>
+  $('#replace-all-btn').on('click', function() {
+    $('button[type="submit"]').not(this).prop('disabled', true);
+    $('#loading-overlay').css('display', 'flex');
+  });
+</script>
 {% endblock %}
    
