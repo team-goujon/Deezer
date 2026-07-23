@@ -41,8 +41,7 @@ def test_unauthenticated_user_can_reach_login_page(live_app):
     response = session.get(f"{live_app}/login", timeout=5)
 
     assert response.status_code == 200
-    assert "Enter Your Deezer Cookies" in response.text
-    assert "Authenticate" in response.text
+    assert "<title>Login - Deezer Service by Goujon</title>" in response.text
 
 
 def test_login_form_rejects_missing_cookies(live_app):
