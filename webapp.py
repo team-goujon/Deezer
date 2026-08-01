@@ -4,6 +4,7 @@ from datetime import timedelta
 from service import DeezerService
 from utils.models import GoujonPlaylistModel, ArtistModel
 from service.auth import is_auth, authenticate, require_auth
+from utils.configuration import get_config_option
 from version import VERSION, RELEASE_DATE
 import logging
 import redis
@@ -30,7 +31,7 @@ def inject_app_metadata():
     return {
         'app_version': VERSION,
         'app_date': RELEASE_DATE,
-        'chrome_store_url': os.getenv('CHROME_STORE_URL'),
+        'chrome_store_url': get_config_option('extension', 'chrome_store_url'),
     }
 
 @app.route('/login', methods=['GET', 'POST'])

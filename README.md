@@ -254,8 +254,9 @@ carries `[skip ci]` so it doesn't trigger the webapp test workflows.
 4. Privacy policy URL: `https://teamgoujon.net/privacy` — justify each
    permission (`cookies`, `notifications`, host permissions).
 5. Submit for review.
-6. After approval, copy the store URL into the `CHROME_STORE_URL` env var so the
-   login page links to it.
+6. After approval, put the store URL in `config.ini` under
+   `[extension] chrome_store_url` so the login page's "Add to Chrome" button
+   links to it.
 
 ### Enabling automatic Chrome Web Store publishing (phase 2)
 
