@@ -188,3 +188,6 @@ cython_debug/
 sessions/
 
 
+
+# Assembled extension builds
+extensions/dist/
