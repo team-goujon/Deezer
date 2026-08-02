@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Playlist preview - Deezer Service by Goujon{% endblock %}
+{% block content %}
+  <form action="#" method="post" class="dz-card m-3 px-3 px-sm-5 py-4 w-100">
+    <div class="align-items-center mb-3">
+      <h2 class="fs-2 mb-3">{{ playlist_title }}</h2>
+      <h3 class="fs-4 fw-normal mb-3">Playlist content <span class="badge bg-secondary fs-6 fw-normal">{{ tracks|length }} track{{ 's' if tracks|length > 1 }}</span></h3>
+      <div class="overflow-y-auto" style="max-height: 50vh;">
+        <table class="table align-middle table-hover">
+          <tbody>
+            {% for values in tracks %}
+                <tr>
+                    <td>
+                      <img src="https://cdn-images.dzcdn.net/images/artist/{{ values['ART_PICTURE'] }}/56x56-000000-80-0-0.jpg" alt="artist image" class="img-fluid rounded-circle" />
+                    </td>
+                    <td>{{ values['SNG_TITLE'] }}</td>
+                    <td>{{ values['ART_NAME'] }}</td>
+                    <td>
+                        <button name="action" value="replace_{{ values['ART_ID'] }}_{{ values['SNG_ID'] }}" type="submit" class="btn btn-sm btn-outline-info"><i class="bi bi-shuffle me-2"></i>Replace</button>
+                    </td>
+                    <td>
+                        <button name="action" value="delete_{{ values['SNG_ID'] }}" type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash me-2"></i>Delete</button>
+                    </td>
+                </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="row align-items-center mt-4 mb-2">
+      <div class="col text-center">
+        <a class="btn btn-danger" href="{{ url_for('cancel') }}"><i class="bi bi-x-circle me-1"></i>Back to menu</a>
+      </div>
+      <div class="col text-center">
+        <button id="replace-all-btn" name="action" value="all_songs_replace" type="submit" class="btn btn-primary"><i class="bi bi-shuffle me-1"></i>Replace All Songs</button>
+      </div>
+    </div>
+  </form>
+
+  <div id="loading-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:9999; flex-direction:column; align-items:center; justify-content:center;">
+    <div class="spinner-border text-info mb-3" role="status" style="width:3rem; height:3rem;"></div>
+    <p class="text-white fs-5 mb-1">Replacing all songs...</p>
+    <p class="text-white-50 small">This may take a moment for large playlists.</p>
+  </div>
+{% endblock %}
+{% block scripts %}
+<script>
+  $('#replace-all-btn').on('click', function() {
+    $('button[type="submit"]').not(this).prop('disabled', true);
+    $('#loading-overlay').css('display', 'flex');
+  });
+</script>
+{% endblock %}
+   

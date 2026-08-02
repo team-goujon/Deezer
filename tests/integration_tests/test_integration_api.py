@@ -36,7 +36,7 @@ def test_get_user_data_with_valid_cookies(flask_app, full_auth):
     assert result["api_token"] == full_auth["api_token"]
 
 
-@pytest.mark.parametrize("tab,key", [("artists", "artists"), ("home", "home")])
+@pytest.mark.parametrize("tab,key", [("artists", "artists"), ("playlists", "playlists")])
 def test_get_profile_data_with_valid_cookies(flask_app, full_auth, tab, key):
     with flask_app.app_context():
         g.auth = full_auth
@@ -99,23 +99,49 @@ def test_create_playlist_check_in_profile(flask_app, full_auth):
         ts = datetime.now().strftime("%Y%m%d%H%M%S")
         playlist_name = f'test_integration_api_{ts}'
         api.create_playlist(playlist_name, "desc", False)
-        profile = api.get_profile_data(tab='home')
-        titles = [p["TITLE"] for p in profile["TAB"]["home"]["playlists"]["data"]]
+        playlists = api.get_profile_data(tab='playlists')
+        titles = [p["TITLE"] for p in playlists["TAB"]["playlists"]["data"]]
         assert playlist_name in titles, "La playlist créée n'apparaît pas dans le profil de l'utilisateur"
-        playlist_id = profile["TAB"]["home"]["playlists"]["data"][0]["PLAYLIST_ID"]
+        playlist_id = playlists["TAB"]["playlists"]["data"][0]["PLAYLIST_ID"]
         api.delete_playlist(playlist_id)  # Nettoyage : supprimer la playlist après le test 
 
-def test_add_songs_to_playlist_and_check_in_profile(flask_app, full_auth):
+
+def test_playlist_song_management(flask_app, full_auth):
     with flask_app.app_context():
         g.auth = full_auth
         api = DeezerAPI()
         ts = datetime.now().strftime("%Y%m%d%H%M%S")
         playlist_name = f'test_integration_api2_{ts}'
         api.create_playlist(playlist_name, "desc", False)
-        profile = api.get_profile_data(tab='home')
-        playlist_id = profile["TAB"]["home"]["playlists"]["data"][0]["PLAYLIST_ID"]
-        api.add_songs_to_playlist([[3135556, 0]], playlist_id)  # Ajouter "Harder, Better, Faster, Stronger" de Daft Punk
+        playlists = api.get_profile_data(tab='playlists')
+        playlist_id = playlists["TAB"]["playlists"]["data"][0]["PLAYLIST_ID"]
+        api.add_songs_to_playlist(playlist_id, [[3135556, 0], [134831006, 0], [54519711, 0]])  # Ajouter "Harder, Better, Faster, Stronger" de Daft Punk
         songs = api.get_playlist_songs(playlist_id)
         song_ids = [s["SNG_ID"] for s in songs['data']]
-        assert '3135556' in song_ids, "La chanson ajoutée n'apparaît pas dans les détails de la playlist"
+        assert '134831006' in song_ids, "Une chanson ajoutée n'apparaît pas dans la playlist"
+        api.update_song_order_in_playlist(playlist_id, [54519711, 3135556, 134831006])  # Réordonner les chansons
+        updated_songs = api.get_playlist_songs(playlist_id)
+        updated_song_ids = [s["SNG_ID"] for s in updated_songs['data']]
+        assert updated_song_ids == ['54519711', '3135556', '134831006'], "L'ordre des chansons dans la playlist n'a pas été mis à jour correctement"
+        api.delete_songs_from_playlist(playlist_id, [[3135556, 0]])  # Supprimer une chanson
+        final_songs = api.get_playlist_songs(playlist_id)
+        final_song_ids = [s["SNG_ID"] for s in final_songs['data']]
+        assert final_song_ids == ['54519711', '134831006'], "Les chansons supprimées apparaissent toujours dans la playlist"
         api.delete_playlist(playlist_id)  # Nettoyage : supprimer la playlist après le test
+
+
+def test_get_playlist_infos_with_valid_cookies(flask_app, full_auth):
+    with flask_app.app_context():
+        g.auth = full_auth
+        result = DeezerAPI().get_playlist_infos(playlist_id='15094101943')  # ID baseplaylistfortest
+
+    assert "DATA" in result, "Clé 'DATA' manquante dans la réponse"
+    assert isinstance(result["DATA"], dict), "'DATA' doit être un dict"
+    assert "TITLE" in result["DATA"], "Clé 'TITLE' manquante dans 'DATA'"
+    assert "SONGS" in result, "Clé 'SONGS' manquante dans la réponse"
+    assert isinstance(result["SONGS"], dict), "'SONGS' doit être un dict"
+    assert "data" in result["SONGS"], "Clé 'data' manquante dans 'SONGS'"
+    assert isinstance(result["SONGS"]["data"], list), "'data' dans 'TAB' doit être une liste"
+    assert len(result["SONGS"]["data"]) > 0, "La liste des playlists ne doit pas être vide pour un playlist_id valide"
+
+
