@@ -52,13 +52,15 @@ make -C extensions build-firefox
 |--------|--------|
 | `make build-chrome` / `make build-firefox` | assemble `dist/<browser>/` |
 | `make build` | assemble both |
+| `make bump-chrome VERSION=x.y.z` / `make bump-firefox VERSION=x.y.z` | write the version into `<browser>/manifest.json` (used by the release workflow) |
+| `make package-chrome` | prod build + zip into `dist/artifacts/chrome.zip` |
+| `make package-firefox` | prod build + Mozilla-signed `.xpi` into `dist/artifacts/` (needs `WEB_EXT_API_KEY` / `WEB_EXT_API_SECRET`) |
 | `make lint-firefox` | assemble then run Mozilla's `web-ext lint` |
 | `make run-firefox` | assemble then launch a temporary Firefox |
 | `make clean` | remove `dist/` |
 
 **Options**
-- `PROD=1` strips the dev-only `http://localhost:5000/*` host permission
-- `VERSION=x.y.z` overrides the version written to the assembled manifest.
+- `PROD=1` strips the dev-only `http://localhost:5000/*` host permission from the assembled build.
 
 ## Local tests
 
@@ -71,19 +73,26 @@ make -C extensions build-firefox
 - Run `make build-firefox`
 - Then in the browser load `extensions/dist/firefox/`: `about:debugging` → This Firefox → Load Temporary Add-on
 
-## Chrome release
+## Releasing
 
-The Chrome extension is **not** released through GitHub Releases (that list is
-reserved for the webapp). The `release-extension.yml` workflow is triggered
-manually and produces a zip artifact; the Chrome Web Store is the real version
-registry once auto-publish is enabled.
+Both extensions are released by a single manual workflow,
+`.github/workflows/release-extension.yml` ("Release Browser Extensions"), with two
+inputs: `version` (e.g. `1.0.0`) and `browser` (`all` by default, or `chrome` /
+`firefox`). It runs in three jobs:
 
-On each run the workflow:
-1. Bumps `.version` in `chrome/manifest.json`, **commits it** (authored by the
-   Team Goujon GitHub App) and pushes a `ext-v<version>` **tag**. This is the
-   version history, no GitHub Release involved.
-2. Assembles a production build with `make build-chrome PROD=1` (localhost
-   stripped) and zips it as the `teamgoujon-chrome-extension-<version>` artifact.
+1. **prepare** — computes the browser matrix and fails early if a target tag
+   already exists (checked via the API).
+2. **release** — a matrix over the selected browsers (parallel). Each bumps the
+   version in its checkout (not committed), assembles a production build (localhost
+   stripped) and packages it (`make package-<browser>`): Chrome as a zip, Firefox as
+   a Mozilla-signed `.xpi`. Uploads both the package and the bumped manifest.
+3. **finalize** — only if every release job succeeded: restores the bumped
+   manifest(s), makes a **single commit**, and pushes the tags
+   (`ext-<browser>-v<version>`, e.g. `ext-chrome-v1.0.0` / `ext-firefox-v1.0.0`).
+
+Committing and tagging last means a failed build leaves no dangling tag. The bump
+commit carries `[skip ci]`. No GitHub Release is created; that list is reserved for
+the webapp.
 
 **Required repo config** (Settings → Secrets and variables → Actions):
 
@@ -91,21 +100,22 @@ On each run the workflow:
 |------|------|-------|
 | `APP_CLIENT_ID` | Variable | Team Goujon GitHub App client ID (`Iv23...`) |
 | `APP_PRIVATE_KEY` | Secret | The app's private key (PEM contents) |
+| `AMO_JWT_ISSUER` | Secret | addons.mozilla.org API key / issuer (Firefox only) |
+| `AMO_JWT_SECRET` | Secret | addons.mozilla.org API secret (Firefox only) |
 
-The app needs "Contents: Read and write" permission and must be installed on the
-repo. If the default branch is protected, allow the app to bypass it.
+The GitHub App needs "Contents: Read and write" and must be installed on the repo;
+if the default branch is protected, allow it to bypass. AMO credentials come from
+https://addons.mozilla.org/developers/addon/api/key/.
 
-### How to build a release zip
+To release: **Actions → Release Browser Extensions → Run workflow**, pick the
+version and browser(s), then download the artifact(s) from the run.
 
-1. Merge extension changes to `main`.
-2. **Actions → Release Chrome Extension → Run workflow**, enter the version
-   (e.g. `1.0.0`), and run it.
-3. The workflow commits the bump and pushes tag `ext-v1.0.0`.
-4. Download the `teamgoujon-chrome-extension-<version>` artifact from the run.
+### Chrome
 
-The bump commit carries `[skip ci]` so it does not trigger the webapp tests.
+Packaged as a zip artifact (`teamgoujon-chrome-extension-<version>`); upload to the
+Chrome Web Store is manual. Tag `ext-chrome-v<version>`.
 
-### First publication (one-time, manual)
+**First publication (one-time, manual)**
 
 1. Create a Chrome Web Store developer account (one-time $5 fee):
    https://chrome.google.com/webstore/devconsole
@@ -119,46 +129,25 @@ The bump commit carries `[skip ci]` so it does not trigger the webapp tests.
    `[extension] chrome_store_url` so the login page's "Add to Chrome" button
    links to it.
 
-### Automatic Chrome Web Store publishing (phase 2)
+**Automatic publishing (phase 2):** uncomment the "Publish to Chrome Web Store"
+step in `release-extension.yml` and add secrets `CWS_EXTENSION_ID`,
+`CWS_CLIENT_ID`, `CWS_CLIENT_SECRET`, `CWS_REFRESH_TOKEN`.
 
-Uncomment the "Publish to Chrome Web Store" step in `release-extension.yml` and
-add these repo secrets: `CWS_EXTENSION_ID`, `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET`,
-`CWS_REFRESH_TOKEN`.
+### Firefox
 
-## Firefox release
+Firefox requires the package to be **signed by Mozilla** to be installable, so it
+is packaged with `web-ext sign --channel unlisted` (self-distribution): the build
+is uploaded to AMO, Mozilla validates and signs it, and the signed `.xpi` is the
+`teamgoujon-firefox-extension-<version>` artifact. Not listed on AMO. Tag
+`ext-firefox-v<version>`; a version can only be signed once.
 
-The `release-firefox-extension.yml` workflow mirrors the Chrome one, but Firefox
-requires the package to be **signed by Mozilla** to be installable, so packaging
-is a `web-ext sign` on the **unlisted** channel (self-distribution). It returns a
-signed `.xpi` uploaded as an artifact. The add-on is not listed on AMO.
+The add-on is identified by `browser_specific_settings.gecko.id`
+(`music-connector@teamgoujon.net`); the first run creates the unlisted add-on under
+your AMO account.
 
-On each run the workflow:
-1. Bumps `.version` in `firefox/manifest.json`, commits it (Team Goujon App) and
-   pushes a `firefox-v<version>` **tag**. A version can only be signed once.
-2. Assembles with `make build-firefox PROD=1` (localhost stripped).
-3. Runs `web-ext sign --channel unlisted`, which uploads the build to AMO,
-   Mozilla validates and signs it, and the signed `.xpi` is downloaded and
-   uploaded as the `teamgoujon-firefox-extension-<version>` artifact.
-
-**Required repo config** (in addition to `APP_CLIENT_ID` / `APP_PRIVATE_KEY`):
-
-| Name | Kind | Value |
-|------|------|-------|
-| `AMO_JWT_ISSUER` | Secret | addons.mozilla.org API key / issuer (`user:...`) |
-| `AMO_JWT_SECRET` | Secret | addons.mozilla.org API secret |
-
-Generate them at https://addons.mozilla.org/developers/addon/api/key/. The add-on
-is identified by `browser_specific_settings.gecko.id`
-(`music-connector@teamgoujon.net`); the first run creates the unlisted add-on
-under your AMO account.
-
-### Distribution (self-hosted)
-
-Unlisted means Mozilla **signs but does not host** the add-on. Host the signed
-`.xpi` yourself (e.g. on teamgoujon.net) and point the login page's "Add to
-Firefox" button at it.
-
-For auto-updates of a self-hosted add-on, add
+**Distribution (self-hosted):** unlisted means Mozilla signs but does not host the
+add-on. Host the signed `.xpi` yourself (e.g. on teamgoujon.net) and point the
+login page's "Add to Firefox" button at it. For auto-updates, add
 `browser_specific_settings.gecko.update_url` to the manifest, pointing at an
 `updates.json` you host that lists versions and their `.xpi` URLs. Without it,
 users keep the installed version until they reinstall manually.
