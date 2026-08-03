@@ -101,6 +101,27 @@ jobs:
           name: manifest-${{ matrix.browser }}
           path: extensions/${{ matrix.browser }}/manifest.json
 
+      # Firefox is self-distributed: publish the signed .xpi to the public Tigris
+      # bucket as a versioned copy and as latest.xpi (the URL the "Add to Firefox"
+      # button points at). Served with the x-xpinstall type so Firefox installs it.
+      # - name: Publish Firefox XPI to Tigris
+      #   if: ${{ matrix.browser == 'firefox' }}
+      #   env:
+      #     AWS_ACCESS_KEY_ID: ${{ secrets.TIGRIS_ACCESS_KEY_ID }}
+      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.TIGRIS_SECRET_ACCESS_KEY }}
+      #     AWS_REGION: auto
+      #     BUCKET: ${{ vars.TIGRIS_BUCKET }}
+      #     VERSION: ${{ github.event.inputs.version }}
+      #   run: |
+      #     set -euo pipefail
+      #     xpi=$(ls extensions/dist/artifacts/*.xpi | head -1)
+      #     echo "Publishing ${xpi}"
+      #     for key in "firefox/teamgoujon-music-connector-${VERSION}.xpi" "firefox/latest.xpi"; do
+      #       aws s3 cp "$xpi" "s3://${BUCKET}/${key}" \
+      #         --endpoint-url https://t3.storage.dev \
+      #         --content-type application/x-xpinstall
+      #     done
+
       # --- Phase 2 (Chrome): automatic publish to the Chrome Web Store (unlisted) ---
       # Enable once the CWS developer account and API credentials exist.
       # Add these repo secrets (Settings -> Secrets and variables -> Actions):

@@ -102,6 +102,9 @@ the webapp.
 | `APP_PRIVATE_KEY` | Secret | The app's private key (PEM contents) |
 | `AMO_JWT_ISSUER` | Secret | addons.mozilla.org API key / issuer (Firefox only) |
 | `AMO_JWT_SECRET` | Secret | addons.mozilla.org API secret (Firefox only) |
+| `TIGRIS_ACCESS_KEY_ID` | Secret | Tigris/S3 access key for the XPI bucket (Firefox only) |
+| `TIGRIS_SECRET_ACCESS_KEY` | Secret | Tigris/S3 secret key (Firefox only) |
+| `TIGRIS_BUCKET` | Variable | Tigris bucket name hosting the signed XPI (Firefox only) |
 
 The GitHub App needs "Contents: Read and write" and must be installed on the repo;
 if the default branch is protected, allow it to bypass. AMO credentials come from
@@ -145,9 +148,30 @@ The add-on is identified by `browser_specific_settings.gecko.id`
 (`music-connector@teamgoujon.net`); the first run creates the unlisted add-on under
 your AMO account.
 
-**Distribution (self-hosted):** unlisted means Mozilla signs but does not host the
-add-on. Host the signed `.xpi` yourself (e.g. on teamgoujon.net) and point the
-login page's "Add to Firefox" button at it. For auto-updates, add
-`browser_specific_settings.gecko.update_url` to the manifest, pointing at an
-`updates.json` you host that lists versions and their `.xpi` URLs. Without it,
-users keep the installed version until they reinstall manually.
+**Distribution (self-hosted via Tigris):** unlisted means Mozilla signs but does
+not host the add-on. The release workflow uploads the signed `.xpi` to a **public
+Tigris bucket** (Fly.io object storage) at two keys: a versioned
+`firefox/teamgoujon-music-connector-<version>.xpi` (history) and `firefox/latest.xpi`
+(the stable URL the button points at). This keeps XPI updates decoupled from the
+webapp: publishing a new version does not require a webapp redeploy.
+
+Since Firefox unlisted add-ons have no AMO listing page, the webapp serves a small
+landing page at **`/extension/firefox`** (route `firefox_extension`, template
+`firefox.html`) that plays the role of the CWS page: it has the "Add to Firefox"
+button linking to `firefox_xpi_url`. The login page's "Add to Firefox" button links
+to this landing page (symmetric with "Add to Chrome" -> CWS). Both are gated on
+`firefox_xpi_url` being set, so they stay "Coming soon" until the bucket is ready.
+
+**One-time setup:**
+1. Create a public bucket: `fly storage create --public` (save the printed
+   credentials, they cannot be retrieved later).
+2. Add repo config: secrets `TIGRIS_ACCESS_KEY_ID` / `TIGRIS_SECRET_ACCESS_KEY`,
+   variable `TIGRIS_BUCKET` (see the table above).
+3. Put the public latest URL in `config.ini` under `[extension] firefox_xpi_url`,
+   e.g. `https://<bucket>.t3.tigrisfiles.io/firefox/latest.xpi`, then deploy the
+   webapp once to activate the buttons.
+
+For auto-updates, add `browser_specific_settings.gecko.update_url` to the Firefox
+manifest, pointing at an `updates.json` (also hostable on Tigris) that lists
+versions and their `.xpi` URLs. Without it, users keep the installed version until
+they reinstall manually.

@@ -32,6 +32,7 @@ def inject_app_metadata():
         'app_version': VERSION,
         'app_date': RELEASE_DATE,
         'chrome_store_url': get_config_option('extension', 'chrome_store_url'),
+        'firefox_xpi_url': get_config_option('extension', 'firefox_xpi_url'),
     }
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -90,6 +91,10 @@ def login_via_extension():
 @app.route('/privacy', methods=['GET'])
 def privacy():
     return render_template('privacy.html')
+
+@app.route('/extension/firefox', methods=['GET'])
+def firefox_extension():
+    return render_template('firefox.html')
 
 @app.route('/logout', methods=['GET'])
 def logout():
