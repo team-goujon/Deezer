@@ -1,5 +1,18 @@
-name: Release Chrome Extension
-run-name: Release Chrome Extension v${{ github.event.inputs.version }}
+name: Release Browser Extensions
+run-name: Release ${{ github.event.inputs.browser }} extension(s) v${{ github.event.inputs.version }}
+
+# Manual release of the Chrome and/or Firefox extensions from the shared source in
+# extensions/. Pick the target with the `browser` input (all by default).
+#
+# Three jobs:
+#   prepare  - compute the browser matrix and fail early if a tag already exists
+#   release  - (matrix, parallel) bump the version in the checkout (not committed),
+#              assemble a production build (localhost stripped) and package it
+#              (Chrome zip / Firefox Mozilla-signed .xpi), then upload both the
+#              package and the bumped manifest.
+#   finalize - only if every release job succeeded: restore the bumped manifest(s),
+#              make one commit, and push the tags (ext-<browser>-v<version>).
+# Committing/tagging last means a failed release leaves no dangling tag.
 
 on:
   workflow_dispatch:
@@ -8,13 +21,129 @@ on:
         description: 'Extension version to build (e.g. 1.0.0)'
         required: true
         type: string
+      browser:
+        description: 'Which browser(s) to release'
+        required: true
+        type: choice
+        default: all
+        options:
+          - all
+          - chrome
+          - firefox
 
 jobs:
-  build:
+  prepare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      browsers: ${{ steps.matrix.outputs.browsers }}
+    steps:
+      - name: Compute matrix and check tags are free
+        id: matrix
+        env:
+          VERSION: ${{ github.event.inputs.version }}
+          BROWSER: ${{ github.event.inputs.browser }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          browsers=()
+          if [ "$BROWSER" = "chrome" ]  || [ "$BROWSER" = "all" ]; then browsers+=(chrome); fi
+          if [ "$BROWSER" = "firefox" ] || [ "$BROWSER" = "all" ]; then browsers+=(firefox); fi
+
+          for b in "${browsers[@]}"; do
+            tag="ext-${b}-v${VERSION}"
+            if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${tag}" >/dev/null 2>&1; then
+              echo "::error::Tag ${tag} already exists"
+              exit 1
+            fi
+          done
+
+          json=$(printf '%s\n' "${browsers[@]}" | jq -R . | jq -cs .)
+          echo "browsers=${json}" >> "$GITHUB_OUTPUT"
+          echo "Selected: ${browsers[*]}"
+
+  release:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: ${{ fromJSON(needs.prepare.outputs.browsers) }}
+    env:
+      WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+      WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: extensions
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build and package ${{ matrix.browser }}
+        run: |
+          make -C extensions bump-${{ matrix.browser }} VERSION="${{ github.event.inputs.version }}"
+          make -C extensions package-${{ matrix.browser }}
+
+      - name: Upload ${{ matrix.browser }} package
+        uses: actions/upload-artifact@v7
+        with:
+          name: teamgoujon-${{ matrix.browser }}-extension-${{ github.event.inputs.version }}
+          path: extensions/dist/artifacts/*
+
+      # Shared with finalize so it can commit the exact bumped manifest.
+      - name: Upload ${{ matrix.browser }} bumped manifest
+        uses: actions/upload-artifact@v7
+        with:
+          name: manifest-${{ matrix.browser }}
+          path: extensions/${{ matrix.browser }}/manifest.json
+
+      # Firefox is self-distributed: publish the signed .xpi to the public Tigris
+      # bucket as a versioned copy and as latest.xpi (the URL the "Add to Firefox"
+      # button points at). Served with the x-xpinstall type so Firefox installs it.
+      # - name: Publish Firefox XPI to Tigris
+      #   if: ${{ matrix.browser == 'firefox' }}
+      #   env:
+      #     AWS_ACCESS_KEY_ID: ${{ secrets.TIGRIS_ACCESS_KEY_ID }}
+      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.TIGRIS_SECRET_ACCESS_KEY }}
+      #     AWS_REGION: auto
+      #     BUCKET: ${{ vars.TIGRIS_BUCKET }}
+      #     VERSION: ${{ github.event.inputs.version }}
+      #   run: |
+      #     set -euo pipefail
+      #     xpi=$(ls extensions/dist/artifacts/*.xpi | head -1)
+      #     echo "Publishing ${xpi}"
+      #     for key in "firefox/teamgoujon-music-connector-${VERSION}.xpi" "firefox/latest.xpi"; do
+      #       aws s3 cp "$xpi" "s3://${BUCKET}/${key}" \
+      #         --endpoint-url https://t3.storage.dev \
+      #         --content-type application/x-xpinstall
+      #     done
+
+      # --- Phase 2 (Chrome): automatic publish to the Chrome Web Store (unlisted) ---
+      # Enable once the CWS developer account and API credentials exist.
+      # Add these repo secrets (Settings -> Secrets and variables -> Actions):
+      #   CWS_EXTENSION_ID, CWS_CLIENT_ID, CWS_CLIENT_SECRET, CWS_REFRESH_TOKEN
+      # See: https://github.com/mnao305/chrome-extension-upload
+      #
+      # - name: Publish to Chrome Web Store
+      #   if: ${{ matrix.browser == 'chrome' }}
+      #   uses: mnao305/chrome-extension-upload@v5.0.0
+      #   with:
+      #     file-path: extensions/dist/artifacts/chrome.zip
+      #     extension-id: ${{ secrets.CWS_EXTENSION_ID }}
+      #     client-id: ${{ secrets.CWS_CLIENT_ID }}
+      #     client-secret: ${{ secrets.CWS_CLIENT_SECRET }}
+      #     refresh-token: ${{ secrets.CWS_REFRESH_TOKEN }}
+      #     publish: true
+
+  finalize:
+    needs: release
     runs-on: ubuntu-latest
     steps:
-      # Authenticate as the Team Goujon GitHub App so the bump commit and tag
-      # are attributed to the app rather than a personal account.
+      # Authenticate as the Team Goujon GitHub App
       - name: Generate GitHub App token
         id: app-token
         uses: actions/create-github-app-token@v3
@@ -24,76 +153,49 @@ jobs:
 
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
+          sparse-checkout: extensions
 
-      - name: Bump manifest version, commit and tag
+      - name: Restore chrome bumped manifest
+        if: ${{ github.event.inputs.browser == 'chrome' || github.event.inputs.browser == 'all' }}
+        uses: actions/download-artifact@v8
+        with:
+          name: manifest-chrome
+          path: extensions/chrome
+
+      - name: Restore firefox bumped manifest
+        if: ${{ github.event.inputs.browser == 'firefox' || github.event.inputs.browser == 'all' }}
+        uses: actions/download-artifact@v8
+        with:
+          name: manifest-firefox
+          path: extensions/firefox
+
+      - name: Commit and tag
         env:
           VERSION: ${{ github.event.inputs.version }}
+          BROWSER: ${{ github.event.inputs.browser }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
         run: |
           set -euo pipefail
-          TAG="ext-v${VERSION}"
 
-          # Fail early if the tag already exists (avoids a confusing push error).
-          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
-            echo "::error::Tag ${TAG} already exists"
-            exit 1
-          fi
+          bumped=""
+          tags=()
+          stage() {
+            local browser="$1"
+            git add "extensions/${browser}/manifest.json"
+            bumped="${bumped:+$bumped, }${browser}"
+            tags+=("ext-${browser}-v${VERSION}")
+          }
 
-          # Persist the version bump in the repo manifest — localhost stays here
-          # for dev; it is only stripped from the packaged zip further below.
-          jq --arg v "$VERSION" '.version = $v' extensions/chrome/manifest.json > manifest.tmp.json
-          mv manifest.tmp.json extensions/chrome/manifest.json
+          if [ "$BROWSER" = "chrome" ]  || [ "$BROWSER" = "all" ]; then stage chrome; fi
+          if [ "$BROWSER" = "firefox" ] || [ "$BROWSER" = "all" ]; then stage firefox; fi
 
-          # Attribute the commit to the app bot (numeric id gives the right avatar
-          # and links the commit to the app).
           BOT_NAME="${APP_SLUG}[bot]"
           BOT_ID="$(gh api "/users/${BOT_NAME}" --jq .id)"
           git config user.name "$BOT_NAME"
           git config user.email "${BOT_ID}+${BOT_NAME}@users.noreply.github.com"
 
-          git add extensions/chrome/manifest.json
-          git commit -m "Bump chrome extension to v${VERSION} [skip ci]"
-          git tag "$TAG"
+          git commit -m "Bump ${bumped} extension(s) to v${VERSION} [skip ci]"
           git push origin HEAD
-          git push origin "$TAG"
-
-      - name: Build production manifest (strip dev-only localhost)
-        working-directory: extensions/chrome
-        run: |
-          jq '.host_permissions = [.host_permissions[] | select(startswith("http://localhost") | not)]' \
-            manifest.json > manifest.prod.json
-          mv manifest.prod.json manifest.json
-          echo "--- Production manifest ---"
-          cat manifest.json
-
-      - name: Package extension
-        run: |
-          cd extensions/chrome
-          zip -r "$GITHUB_WORKSPACE/teamgoujon-chrome-extension-${{ github.event.inputs.version }}.zip" . -x "*.md"
-          cd "$GITHUB_WORKSPACE"
-          ls -lh teamgoujon-chrome-extension-*.zip
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: teamgoujon-chrome-extension-${{ github.event.inputs.version }}
-          path: teamgoujon-chrome-extension-${{ github.event.inputs.version }}.zip
-
-      # --- Phase 2: automatic publish to the Chrome Web Store (unlisted) ---
-      # Enable once the CWS developer account and API credentials exist.
-      # Add these repo secrets (Settings → Secrets and variables → Actions):
-      #   CWS_EXTENSION_ID, CWS_CLIENT_ID, CWS_CLIENT_SECRET, CWS_REFRESH_TOKEN
-      # See: https://github.com/mnao305/chrome-extension-upload
-      #
-      # - name: Publish to Chrome Web Store
-      #   uses: mnao305/chrome-extension-upload@v5.0.0
-      #   with:
-      #     file-path: teamgoujon-chrome-extension-${{ github.event.inputs.version }}.zip
-      #     extension-id: ${{ secrets.CWS_EXTENSION_ID }}
-      #     client-id: ${{ secrets.CWS_CLIENT_ID }}
-      #     client-secret: ${{ secrets.CWS_CLIENT_SECRET }}
-      #     refresh-token: ${{ secrets.CWS_REFRESH_TOKEN }}
-      #     publish: true
+          for t in "${tags[@]}"; do git tag "$t"; git push origin "$t"; done

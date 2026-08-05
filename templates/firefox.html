@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}TeamGoujon Music Connector for Firefox{% endblock %}
+{% block content %}
+  <div class="dz-card m-2 px-3 px-md-5 py-4 text-start" style="width: 560px; max-width: 100%;">
+
+    <div class="d-flex align-items-center gap-3 mb-3">
+      <i class="bi bi-puzzle-fill" style="font-size: 2.2rem; color: #0e9488;"></i>
+      <div>
+        <h2 class="h4 mb-0">TeamGoujon Music Connector</h2>
+        <div class="text-white-50 small">Firefox extension</div>
+      </div>
+    </div>
+
+    <p>
+      Connectez votre compte Deezer à TeamGoujon en un clic, sans copier vos
+      cookies à la main.
+    </p>
+
+    <div class="text-center my-4">
+      {% if firefox_xpi_url %}
+      <a href="{{ firefox_xpi_url }}" class="btn btn-success">
+        <i class="bi bi-browser-firefox me-1"></i>Add to Firefox
+      </a>
+      <div class="text-white-50 small mt-2">
+        Extension signée par Mozilla, distribuée par TeamGoujon.
+      </div>
+      {% else %}
+      <button type="button" class="btn btn-secondary" disabled>
+        <i class="bi bi-browser-firefox me-1"></i>Coming soon
+      </button>
+      {% endif %}
+    </div>
+
+    <h3 class="h6 mt-4">Comment ça marche</h3>
+    <ol class="small">
+      <li>Cliquez sur « Add to Firefox » et confirmez l'installation.</li>
+      <li>Ouvrez et connectez-vous sur
+        <a href="https://www.deezer.com" target="_blank" rel="noopener">Deezer.com</a>.</li>
+      <li>Cliquez sur l'icône TeamGoujon dans votre barre d'outils : vous arrivez
+        connecté sur TeamGoujon.</li>
+    </ol>
+
+    <h3 class="h6 mt-4">Autorisations</h3>
+    <ul class="small">
+      <li><code>cookies</code> : lire les cookies de session Deezer (<code>arl</code>, <code>sid</code>).</li>
+      <li><code>notifications</code> : afficher le résultat de la connexion.</li>
+      <li>Accès à <code>deezer.com</code> et <code>teamgoujon.net</code>.</li>
+    </ul>
+
+    <p class="small text-white-50 mt-4 mb-0">
+      Vos cookies sont envoyés uniquement à TeamGoujon. Voir la
+      <a class="link-light" href="{{ url_for('privacy') }}">politique de confidentialité</a>.
+    </p>
+  </div>
+{% endblock %}
