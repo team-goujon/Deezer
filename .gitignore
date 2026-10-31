@@ -188,3 +188,7 @@ cython_debug/
 sessions/
 
 .claude/
+
+
+# Assembled extension builds
+extensions/dist/

@@ -9,6 +9,9 @@ services:
       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
     env_file:
       - .env
+    volumes:
+      - .:/app
+    command: gunicorn --bind 0.0.0.0:5000 --workers 1 --reload webapp:app
   redis:
     image: redis:latest
     command: redis-server --requirepass ${REDIS_PASSWORD}

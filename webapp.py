@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, jsonify, render_template, request, redirect, url_for, session
 from flask_session import Session
 from datetime import timedelta
 from service import DeezerService
 from utils.models import GoujonPlaylistModel, ArtistModel
 from service.auth import is_auth, authenticate, require_auth
+from utils.configuration import get_config_option
 from version import VERSION, RELEASE_DATE
 import logging
 import redis
@@ -27,7 +28,12 @@ service = DeezerService()
 
 @app.context_processor
 def inject_app_metadata():
-    return {'app_version': VERSION, 'app_date': RELEASE_DATE}
+    return {
+        'app_version': VERSION,
+        'app_date': RELEASE_DATE,
+        'chrome_store_url': get_config_option('extension', 'chrome_store_url'),
+        'firefox_xpi_url': get_config_option('extension', 'firefox_xpi_url'),
+    }
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -50,6 +56,45 @@ def login():
     if is_auth(session):
         return redirect(url_for('menu'))
     return render_template('login.html')
+
+_EXTENSION_ORIGIN_PREFIXES = ('moz-extension://', 'chrome-extension://')
+
+def _extension_cors(response):
+    """Allow the browser extensions to call this endpoint cross-origin."""
+    origin = request.headers.get('Origin', '')
+    if origin.startswith(_EXTENSION_ORIGIN_PREFIXES):
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        response.headers['Vary'] = 'Origin'
+    return response
+
+@app.route('/login-via-extension', methods=['POST', 'OPTIONS'])
+def login_via_extension():
+    if request.method == 'OPTIONS':
+        return _extension_cors(app.make_default_options_response())
+
+    data = request.get_json()
+    arl, sid = data.get('arl'), data.get('sid')
+    if not arl or not sid:
+        return _extension_cors(jsonify({'ok': False, 'error': 'missing cookies'})), 400
+
+    auth_data = authenticate(arl, sid)
+    if not auth_data:
+        return _extension_cors(jsonify({'ok': False, 'error': 'invalid cookies'})), 401
+
+    session['auth'] = auth_data
+    logger.info("User authenticated via extension")
+    return _extension_cors(jsonify({'ok': True}))
+
+@app.route('/privacy', methods=['GET'])
+def privacy():
+    return render_template('privacy.html')
+
+@app.route('/extension/firefox', methods=['GET'])
+def firefox_extension():
+    return render_template('firefox.html')
 
 @app.route('/logout', methods=['GET'])
 def logout():
