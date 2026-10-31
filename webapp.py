@@ -57,6 +57,7 @@ def logout():
     return redirect(url_for('login'))
 
 @app.route('/', methods=['GET', 'POST'])
+@require_auth
 def menu():
     return render_template('menu.html')
 
@@ -93,11 +94,9 @@ def save_playlist():
         if request.form.get('action', '') == 'save':
             service.save_playlist_on_deezer_profile(playlist)
             return redirect(url_for('menu'))
-        if request.form.get('action', '').startswith('replace_'):
-            _, artist_id, song_id = request.form.get('action').split('_')
-            session['playlist'] = service.replace_song_in_playlist(playlist, artist_id, song_id).model_dump_json()
-        if request.form.get('action', '').startswith('delete_'):
-            _, song_id = request.form.get('action').split('_')
+        if song_id := request.form.get('replace_song'):
+            session['playlist'] = service.replace_song_in_playlist(playlist, song_id).model_dump_json()
+        if song_id := request.form.get('delete_song'):
             session['playlist'] = service.delete_song_from_playlist(playlist, song_id).model_dump_json()
     track_list_to_render = [t.model_dump() for t in playlist.track_list]
     return render_template('save_playlist.html', playlist_title=playlist.name, tracks=track_list_to_render)
@@ -132,11 +131,9 @@ def edit_playlist():
     if request.method == 'POST':
         if request.form.get('action', '') == 'all_songs_replace':
             session['playlist'] =  service.replace_all_songs(playlist).model_dump_json()
-        if request.form.get('action', '').startswith('replace_'):
-            _, artist_id, song_id = request.form.get('action').split('_')
-            session['playlist'] = service.replace_song_in_playlist(playlist, artist_id, song_id, editing_playlist=True).model_dump_json()
-        if request.form.get('action', '').startswith('delete_'):
-            _, song_id = request.form.get('action').split('_')
+        if song_id := request.form.get('replace_song'):
+            session['playlist'] = service.replace_song_in_playlist(playlist, song_id, editing_playlist=True).model_dump_json()
+        if song_id := request.form.get('delete_song'):
             session['playlist'] = service.delete_song_from_playlist(playlist, song_id, editing_playlist=True).model_dump_json()
     track_list_to_render = [t.model_dump() for t in playlist.track_list]
     return render_template('edit_playlist.html', playlist_title=playlist.name, tracks=track_list_to_render)

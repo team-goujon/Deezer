@@ -16,10 +16,10 @@
                     <td>{{ values['SNG_TITLE'] }}</td>
                     <td>{{ values['ART_NAME'] }}</td>
                     <td>
-                        <button name="action" value="replace_{{ values['ART_ID'] }}_{{ values['SNG_ID'] }}" type="submit" class="btn btn-sm btn-outline-info"><i class="bi bi-shuffle me-2"></i>Replace</button>
+                        <button name="replace_song" value="{{ values['SNG_ID'] }}" type="submit" class="btn btn-sm btn-outline-info"><i class="bi bi-shuffle me-2"></i>Replace</button>
                     </td>
                     <td>
-                        <button name="action" value="delete_{{ values['SNG_ID'] }}" type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash me-2"></i>Delete</button>
+                        <button name="delete_song" value="{{ values['SNG_ID'] }}" type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash me-2"></i>Delete</button>
                     </td>
                 </tr>
             {% endfor %}

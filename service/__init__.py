@@ -97,8 +97,9 @@ class DeezerService:
             logger.error(f"Failed to delete songs from playlist: {e}")
             raise DeezerServiceError("Failed to delete songs from playlist")
         
-    def replace_song_in_playlist(self, playlist: GoujonPlaylistModel, artist_id: str, song_id: str, editing_playlist: bool = False) -> GoujonPlaylistModel:
+    def replace_song_in_playlist(self, playlist: GoujonPlaylistModel, song_id: str, editing_playlist: bool = False) -> GoujonPlaylistModel:
         try:
+            artist_id = next((track.ART_ID for track in playlist.track_list if track.SNG_ID == song_id), None)
             artist_tracks = self.__get_tracks_by_artist(artist_id)
             existing_song_ids = {t.SNG_ID for t in playlist.track_list if t.ART_ID == artist_id}
             new_song = self.__find_artist_new_song(artist_tracks, existing_song_ids)
