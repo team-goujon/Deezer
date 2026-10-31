@@ -326,7 +326,7 @@ def test_delete_song_from_playlist_error(service, playlist_to_create_with_songs)
 def test_replace_song_in_playlist_creation(service, playlist_to_create_with_songs):
     playlist = playlist_to_create_with_songs.model_copy()
     service.api.get_artist_data.return_value = make_mock_artist_data_songs_for_replace("art_1")
-    playlist = service.replace_song_in_playlist(playlist, artist_id="art_1", song_id="song_1")
+    playlist = service.replace_song_in_playlist(playlist, song_id="song_1")
 
     assert isinstance(playlist, GoujonPlaylistModel)
     assert len(playlist.track_list) == len(playlist_to_create_with_songs.track_list)
@@ -339,7 +339,7 @@ def test_replace_song_in_playlist_creation(service, playlist_to_create_with_song
 def test_replace_song_in_playlist_editing(service, playlist_to_create_with_songs):
     playlist = playlist_to_create_with_songs.model_copy()
     service.api.get_artist_data.return_value = make_mock_artist_data_songs_for_replace("art_1")
-    playlist = service.replace_song_in_playlist(playlist, artist_id="art_1", song_id="song_1", editing_playlist=True)
+    playlist = service.replace_song_in_playlist(playlist, song_id="song_1", editing_playlist=True)
 
     assert isinstance(playlist, GoujonPlaylistModel)
     assert len(playlist.track_list) == len(playlist_to_create_with_songs.track_list)
@@ -353,7 +353,7 @@ def test_replace_song_in_playlist_no_alternative_tracks(service, playlist_to_cre
     playlist = playlist_to_create_with_songs.model_copy()
     service.api.get_artist_data.return_value = make_mock_artist_data_songs_for_replace("art_1")
     playlist.track_list.append(SongModel(SNG_ID="song_4", SNG_TITLE="Song 4", ART_ID="art_1", ART_NAME="Artist 1", DURATION=200))
-    result_playlist = service.replace_song_in_playlist(playlist, artist_id="art_1", song_id="song_1", editing_playlist=True)
+    result_playlist = service.replace_song_in_playlist(playlist, song_id="song_1", editing_playlist=True)
 
     assert isinstance(result_playlist, GoujonPlaylistModel)
     assert playlist == playlist_to_create_with_songs 
@@ -364,7 +364,7 @@ def test_replace_song_in_playlist_no_alternative_tracks(service, playlist_to_cre
 def test_replace_song_in_playlist_error(service, playlist_to_create_with_songs):
     service.api.delete_songs_from_playlist.side_effect = Exception("API error")
     with pytest.raises(DeezerServiceError):
-        service.replace_song_in_playlist(playlist_to_create_with_songs, artist_id="art_1", song_id="song_1", editing_playlist=True)
+        service.replace_song_in_playlist(playlist_to_create_with_songs, song_id="song_1", editing_playlist=True)
 
 
 def test_replace_all_songs(service, playlist_to_create_with_songs):
