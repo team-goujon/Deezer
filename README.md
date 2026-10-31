@@ -199,6 +199,15 @@ App deployed, users see v1.1.0 with release date
 
 ---
 
+## Browser Extensions
+
+The Chrome and Firefox extensions live in [extensions/](extensions/), built from
+a shared source with a `Makefile` and released by dedicated workflows. See
+[extensions/README.md](extensions/README.md) for the structure, local dev, and
+the Chrome / Firefox build, release, and publication steps.
+
+---
+
 ## Fly.io Setup
 
 ### Initial Setup (One-time)

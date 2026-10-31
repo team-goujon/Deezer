@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Privacy Policy — TeamGoujon{% endblock %}
+{% block content %}
+<div class="dz-card p-4 text-start" style="max-width: 720px;">
+  <h1 class="h2 mb-3 text-center">Politique de confidentialité</h1>
+  <h2 class="h3 mb-3 text-center">Extension TeamGoujon Music Connector</h2>
+  <p class="text-white-50 small">Dernière mise à jour : {{ app_date }}</p>
+
+  <h3 class="h4 mt-4">Ce que fait l'extension</h3>
+  <p>L'extension « TeamGoujon Music Connector » permet de connecter votre compte
+  musical au service TeamGoujon sans avoir à copier manuellement vos cookies.</p>
+
+  <h3 class="h4 mt-4">Données traitées</h3>
+  <p>Au clic sur l'icône, l'extension lit uniquement deux cookies de session
+  Deezer présents dans votre navigateur : <code>arl</code> et <code>sid</code>.
+  Ces cookies sont des identifiants de session permettant à TeamGoujon d'agir
+  en votre nom sur Deezer.</p>
+
+  <h3 class="h4 mt-4">Utilisation et transmission</h3>
+  <ul>
+    <li>Les cookies lus sont envoyés exclusivement au serveur TeamGoujon
+    (<code>https://teamgoujon.net/login-via-extension</code>) via HTTPS.</li>
+    <li>Ils servent uniquement à ouvrir votre session sur TeamGoujon.</li>
+    <li>Aucune donnée n'est transmise à un tiers, ni utilisée à des fins
+    publicitaires ou d'analyse.</li>
+    <li>L'extension ne collecte ni votre historique de navigation, ni aucune
+    autre donnée personnelle.</li>
+  </ul>
+
+  <h3 class="h4 mt-4">Stockage</h3>
+  <p>L'extension ne stocke aucune donnée localement. La session créée côté
+  TeamGoujon est gérée par le serveur et expire automatiquement.</p>
+
+  <h3 class="h4 mt-4">Permissions demandées</h3>
+  <ul>
+    <li><code>cookies</code> : lire les cookies de session Deezer nécessaires à la connexion.</li>
+    <li><code>notifications</code> : afficher un message en cas de succès ou d'erreur.</li>
+    <li>Accès aux domaines <code>deezer.com</code> et <code>teamgoujon.net</code> :
+    lire les cookies et transmettre la session au bon serveur.</li>
+  </ul>
+
+  <h3 class="h4 mt-4">Contact</h3>
+  <p>Pour toute question, contactez l'équipe TeamGoujon.</p>
+</div>
+{% endblock %}
