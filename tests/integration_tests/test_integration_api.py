@@ -4,6 +4,7 @@ from service.api import DeezerAPI
 from utils.exceptions import LoginException, DeezerAPIError
 from datetime import datetime
 from conftest import INVALID_AUTH
+from pydantic import ValidationError
 
 
 def test_get_user_data_has_expected_structure(flask_app, base_auth):
@@ -69,7 +70,7 @@ def test_get_artist_data_with_valid_artist_id(flask_app, full_auth):
 def test_get_artist_data_with_invalid_artist_id(flask_app, full_auth):
     with flask_app.app_context():
         g.auth = full_auth
-        with pytest.raises(DeezerAPIError, match="Request Error: {'REQUEST_ERROR': 'Wrong parameters'}"):
+        with pytest.raises(ValidationError):
             DeezerAPI().get_artist_data(artist_id='invalid', tab=0)
 
 
