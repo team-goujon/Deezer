@@ -34,7 +34,7 @@ config_dict = {
         },
         'service': {
                 'handlers': ['console'],
-                'level': logging.INFO,
+                'level': logging.DEBUG,
                 'propagate': False
         },
         'selenium': {

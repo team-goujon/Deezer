@@ -10,7 +10,7 @@ import os
 email = os.getenv("DEEZER_EMAIL")
 password = os.getenv("DEEZER_PWD")
 
-driver = uc.Chrome()
+driver = uc.Chrome(version_main=150)
 
 driver.get("https://account.deezer.com/fr/login/")
 

@@ -1,82 +1,25 @@
 {% extends "base.html" %}
-{% block title %}Playlist parameters - Deezer Service by Goujon{% endblock %}
+{% block title %}Main menu{% endblock %}
 {% block content %}
-  <form action="#" method="post" class="dz-card m-3 p-3">
-    <div class="container text-end align-items-center mb-3">
-    
-      <div class="row align-items-center mb-3">
-        <div class="col">
-          <label for="playlist_name" class="form-label">Playlist name:</label>
-        </div>
-        <div class="col">
-            <input type="text" name="playlist_name" class="form-control" aria-describedby="playlistNameHelpInline" required>
-        </div>
-      </div>
-      
-      <div class="row align-items-center mb-3">
-        <div class="col">
-          <label for="public_playlist" class="form-label">Public playlist ?</label>
-        </div>
-        <div class="col">
-          <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" role="switch" name="public_playlist">
-          </div>
-        </div>
+  <div class="dz-card m-3 p-4">
+    <div class="d-grid gap-4 col-10 col-md-8 mx-auto">
+
+      <div>
+        <a class="btn btn-lg btn-primary w-100 py-3 fs-5" href="{{ url_for('playlist_parameters') }}">
+          <i class="bi bi-music-note-list me-2"></i>New playlist
+        </a>
+        <p class="text-white-50 small mt-2 mb-0 text-center">Generate a fresh playlist from your favorite artists or Deezer Flow</p>
       </div>
 
-      <div class="row align-items-center mb-3">
-        <div class="col">
-          <label for="mode" class="form-label">Artists selection:</label>
-        </div>
-        <div class="col">
-          <div class="form-floating">
-            <select class="form-select" aria-label="Default select example" name="mode_selection" id="mode">
-              <option value="Favorites">From favorites</option>
-              <option value="Flow">From Deezer flow</option>
-              <option value="Manual">Manual</option>
-            </select> 
-            <label for="mode">Choose one:</label>
-          </div>
-        </div>
+      <div>
+        <a class="btn btn-lg btn-secondary w-100 py-3 fs-5" href="{{ url_for('playlists_to_edit') }}">
+          <i class="bi bi-pencil-square me-2"></i>Edit existing playlist
+        </a>
+        <p class="text-white-50 small mt-2 mb-0 text-center">Load one of your Deezer playlists and update its tracks</p>
       </div>
 
-      <div class="row align-items-center mb-3" id="artists_number_row">
-        <div class="col">
-          <label for="artists_number" class="form-label">Number of artists:</label>
-        </div>
-        <div class="col">
-          <input type="number" name="artists_number" class="form-control" min="1" aria-describedby="artistsNumberHelpInline">
-        </div>
-      </div>
-
-      <div class="row align-items-center mb-3" id="songs_number_row">
-        <div class="col">
-          <label for="songs_number" class="form-label">Number of songs per artist:</label>
-        </div>
-        <div class="col">
-          <input type="number" name="songs_number" class="form-control" min="1" aria-describedby="songsNumberHelpInline">
-        </div>
-      </div>
-
-      <div class="row align-items-center mb-3" id="relative_row">
-        <div class="col">
-          <label for="relative_switch" class="form-label">Include similar artists?</label>
-        </div>
-        <div class="col">
-          <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" role="switch" name="related_artists" id="relative_switch">
-          </div>
-        </div>
-      </div>
-
-      <div class="row align-items-center m-3">
-        <div class="col text-center">
-          <button type="submit" class="btn btn-primary"><i class="bi bi-shuffle me-1"></i>Generate</button>
-        </div>
-      </div>
-      
     </div>
-  </form>
+  </div>
 
   <div class="row align-items-center m-3">
     <div class="col text-center">
@@ -84,15 +27,4 @@
     </div>
   </div>
 {% endblock %}
-{% block scripts %}
-<script>
-  $('#mode').change(function() {
-      opt = $(this).val();
-      if (opt=="Favorites") {
-          $('#artists_number_row').removeClass('collapse', true);
-      }else {
-          $('#artists_number_row').addClass('collapse', true);
-      }
-  });
-</script>
-{% endblock %}
+   

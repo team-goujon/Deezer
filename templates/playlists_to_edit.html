@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Goujon Playlists{% endblock %}
+{% block content %}
+  <form action="#" method="post" class="dz-card m-3 px-3 px-sm-5 py-4 w-100">
+    <div class="align-items-center mb-3">
+      <h2>Existing playlists</h2>
+      <div class="overflow-y-auto" style="max-height: 50vh;">
+        <table class="table align-middle table-hover">
+          <tbody>
+            {% for values in playlists %}
+                <tr>
+                    <td>
+                        <img src="https://cdn-images.dzcdn.net/images/cover/{{ values['playlist_picture'] }}/56x56-000000-80-0-0.jpg" alt="playlist cover" class="img-fluid" referrerpolicy="no-referrer"/>
+                    </td>
+                    <td>{{ values['name'] }}</td>
+                    <td>{{ values['nb_song'] }} songs</td>
+                    <td>
+                        <button name="action" value="{{ values['id'] }}" type="submit" class="btn btn-sm btn-outline-info"><i class="bi bi-pencil me-2"></i>Edit</button>
+                    </td>
+                </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="row align-items-center mt-4 mb-2">
+      <div class="col text-center">
+        <a class="btn btn-danger" href="{{ url_for('cancel') }}"><i class="bi bi-x-circle me-1"></i>Cancel</a>
+      </div>
+    </div>
+  </form>
+{% endblock %}
+   

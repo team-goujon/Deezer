@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Choose artists - Deezer Service by Goujon{% endblock %}
 {% block content %}
-  <form action="#" method="post" class="dz-card m-2 px-2 px-sm-5 py-3 w-100">
+  <form action="#" method="post" class="dz-card m-3 px-3 px-sm-5 py-4 w-100">
     <div class="align-items-center mb-3">
       <h2 class="mb-2">Choose some artists</h2>
       <div class="d-flex align-items-center gap-2 mb-2">
@@ -14,7 +14,9 @@
           <tbody>
             {% for values in artists %}
                 <tr>
-                    <td><img src="https://cdn-images.dzcdn.net/images/artist/{{ values['ART_PICTURE'] }}/56x56-000000-80-0-0.jpg" alt="artist image" class="img-fluid rounded-circle" /></td>
+                    <td>
+                      <img src="https://cdn-images.dzcdn.net/images/artist/{{ values['ART_PICTURE'] }}/56x56-000000-80-0-0.jpg" alt="artist image" class="img-fluid rounded-circle" />
+                    </td>
                     <td>{{ values['ART_NAME'] }}</td>
                     <td>
                       <div class="form-check">
@@ -31,7 +33,7 @@
         </table>
       </div>
     </div>
-    <div class="row align-items-center mb-3">
+    <div class="row align-items-center mt-4 mb-2">
       <div class="col text-center">
         <a class="btn btn-danger" href="{{ url_for('cancel') }}"><i class="bi bi-x-circle me-1"></i>Cancel</a>
       </div>
