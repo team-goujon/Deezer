@@ -66,6 +66,6 @@ def test_user_can_login_with_deezer_cookies(live_app, deezer_cookies):
     )
 
     assert response.status_code == 200
-    assert response.url == f"{live_app}/"
-    assert "Playlist name:" in response.text
-    assert "Generate" in response.text
+    assert response.url == f"{live_app}/login"
+    assert "Login - Deezer Service by Goujon" in response.text
+    assert "One-click login (recommended)" in response.text
